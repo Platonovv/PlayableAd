@@ -1,0 +1,27 @@
+using System;
+using System.Threading;
+
+namespace Project.Domain
+{
+    /// <summary>
+    /// Уникальный идентификатор юнита в рамках процесса.
+    /// </summary>
+    public readonly struct UnitId : IEquatable<UnitId>
+    {
+        private static int _counter;
+
+        public int Value { get; }
+
+        private UnitId(int value) => Value = value;
+
+        public static UnitId Next() => new(Interlocked.Increment(ref _counter));
+
+        public bool Equals(UnitId other) => Value == other.Value;
+        public override bool Equals(object obj) => obj is UnitId other && Equals(other);
+        public override int GetHashCode() => Value;
+        public override string ToString() => $"#{Value}";
+
+        public static bool operator ==(UnitId a, UnitId b) => a.Value == b.Value;
+        public static bool operator !=(UnitId a, UnitId b) => a.Value != b.Value;
+    }
+}

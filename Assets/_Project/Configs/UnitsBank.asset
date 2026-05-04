@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a83009473e5c1a40922a8c0db886f98, type: 3}
+  m_Name: UnitsBank
+  m_EditorClassIdentifier: 
+  PlayerPrefab: {fileID: 8298516055802294066, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
+  ChestPrefab: {fileID: 1662859842060410750, guid: e87411f23ff5e9c4198f404743f25f0d, type: 3}
+  Enemies:
+  - Key: goblin
+    Prefab: {fileID: 7131616522719221271, guid: e076e866a6f614e4d8d598b05159265f, type: 3}
+  - Key: ogre
+    Prefab: {fileID: 7131616522719221271, guid: 6346da123317169419bc471255883447, type: 3}

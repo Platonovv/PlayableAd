@@ -1,0 +1,34 @@
+using System;
+using System.Collections.Generic;
+using Project.Domain;
+using UnityEngine;
+
+namespace Project.Configs
+{
+    /// <summary>
+    /// Расстановка уровня: стартовая сила игрока и список целей; читается <see cref="Project.Gameplay.UnitSpawner"/>.
+    /// </summary>
+    [CreateAssetMenu(menuName = "Playable/Level Config", fileName = "LevelConfig")]
+    public sealed class LevelConfig : ScriptableObject
+    {
+        [Serializable]
+        public struct PlayerSpawn
+        {
+            public Vector2 Position;
+            public int Power;
+        }
+
+        [Serializable]
+        public struct TargetSpawn
+        {
+            public UnitKind Kind;
+            public Vector2 Position;
+            public int Power;
+            [Tooltip("Optional id used by the view layer to pick a specific prefab variant.")]
+            public string PrefabKey;
+        }
+
+        public PlayerSpawn Player = new() { Position = new Vector2(0f, -3f), Power = 5 };
+        public List<TargetSpawn> Targets = new();
+    }
+}

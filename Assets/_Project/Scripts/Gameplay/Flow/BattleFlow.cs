@@ -23,6 +23,9 @@ namespace Project.Gameplay.Flow
 		[SerializeField] private ScreenShake _shake;
 		[SerializeField] private FloatingNumber _floatingNumberPrefab;
 		[SerializeField] private Transform _floatingNumbersRoot;
+		[SerializeField] private Color _enemyArrowColor    = new(0.95f, 0.25f, 0.25f, 1f);
+		[SerializeField] private Color _winnableArrowColor = new(0.25f, 0.55f, 1f,    1f);
+		[SerializeField] private Color _chestArrowColor    = new(0.30f, 0.85f, 0.35f, 1f);
 
 		private BattleFlowContext _ctx;
 		private StateMachine<BattleFlowContext> _fsm;
@@ -60,7 +63,10 @@ namespace Project.Gameplay.Flow
 				Input = _input,
 				Vfx = _vfx,
 				Shake = _shake,
-				Numbers = pool
+				Numbers = pool,
+				EnemyArrowColor    = _enemyArrowColor,
+				WinnableArrowColor = _winnableArrowColor,
+				ChestArrowColor    = _chestArrowColor
 			};
 
 			_fsm = new StateMachine<BattleFlowContext>(_ctx);
@@ -118,7 +124,7 @@ namespace Project.Gameplay.Flow
 			// Обновляем _highlighted для будущей очистки при переходе в Idle/Won.
 			// SetHighlighted НЕ зовём — кольца уже управляются SetPreview.
 			_highlighted = view;
-			_ctx.Indicator.Show(_ctx.Player.transform, view.Stop);
+			_ctx.Indicator.Show(_ctx.Player.transform, view.Stop, _ctx.ColorFor(view));
 		}
 
 		private void EndPreview()

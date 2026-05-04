@@ -1,3 +1,5 @@
+using Cysharp.Threading.Tasks;
+using Project.Core;
 using Project.Domain;
 using TMPro;
 using UnityEngine;
@@ -39,6 +41,17 @@ namespace Project.Gameplay.Units
 		{
 			if (_text != null)
 				_text.text = value.ToString();
+		}
+
+		public void Pop()
+		{
+			// Большая амплитуда — лейбл «выпрыгивает» на прилёт +N, читается лучше.
+			Tween.Punch(transform, 0.65f, 0.35f).Forget();
+		}
+
+		public void SetVisible(bool value)
+		{
+			gameObject.SetActive(value);
 		}
 
 		private void LateUpdate()

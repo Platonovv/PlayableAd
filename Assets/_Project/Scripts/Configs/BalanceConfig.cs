@@ -17,18 +17,20 @@ namespace Project.Configs
         public float AttackImpactDelay = 0.25f;
         public float AttackRecover = 0.25f;
         public float FailedAttackBounce = 0.35f;
-        public float UpgradeDuration = 0.6f;
-        public float HitReactionDelay = 0.35f;
-        public float DeathAnimDuration = 1.0f;
-        public float DeathFadeDuration = 0.25f;
+        public float UpgradeDuration = 1.2f;
+        public float UpgradeAnimTail = 0.4f;
+        public float HitReactionDelay = 0.20f;
+        public float DeathAnimDuration = 0.85f;
+        public float DeathFadeDuration = 0.20f;
+        public int SuperAttackThreshold = 10;
 
         [Header("Camera")]
-        public float HitShakeAmplitude = 0.12f;
+        public float HitShakeAmplitude = 0.16f;
         public float HitShakeDuration = 0.18f;
 
         [Header("UI")]
         public float FloatingNumberRise = 1.2f;
-        public float FloatingNumberDuration = 0.9f;
-        public float EndCardDelay = 0.6f;
+        public float FloatingNumberDuration = 0.55f;
+        public float EndCardDelay = 0.5f;
     }
 }

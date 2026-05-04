@@ -19,3 +19,5 @@ MonoBehaviour:
     Prefab: {fileID: 7131616522719221271, guid: e076e866a6f614e4d8d598b05159265f, type: 3}
   - Key: ogre
     Prefab: {fileID: 7131616522719221271, guid: 6346da123317169419bc471255883447, type: 3}
+  - Key: ogre2
+    Prefab: {fileID: 7131616522719221271, guid: 73357090769ba0047831a7e73e031978, type: 3}

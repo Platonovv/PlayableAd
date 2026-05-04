@@ -12,4 +12,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a7dfc4b676dab024a8604d31afc22c77, type: 3}
   m_Name: VfxBank
   m_EditorClassIdentifier: Project.Runtime::Project.Gameplay.Vfx.VfxBank
-  Entries: []
+  Entries:
+  - Key: hit
+    Prefab: {fileID: 2541407024749985646, guid: 14c6ae3b9942dc948b0b2fd1119e1663, type: 3}
+  - Key: block
+    Prefab: {fileID: 844312085958824636, guid: 85087fca2c9cb1a4bbc8bb1c75389748, type: 3}
+  - Key: chest_open
+    Prefab: {fileID: 844312085958824636, guid: d83a14f10c98bac44bf4e88ca19cc6e5, type: 3}
+  - Key: super_hit
+    Prefab: {fileID: 6539456768377411977, guid: 5a88ead0afd298c489fcebd79ad6929d, type: 3}
+  - Key: death
+    Prefab: {fileID: 6539456768377411977, guid: 3e966edb9b29528409128cd65f3df298, type: 3}
+  - Key: power_gain
+    Prefab: {fileID: 6539456768377411977, guid: bce0a2af192c7884a800bc6ec3d838a6, type: 3}
+  - Key: upgrade
+    Prefab: {fileID: 6539456768377411977, guid: e36d2825016e32546becaf0b9a035abc, type: 3}

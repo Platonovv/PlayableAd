@@ -37,23 +37,37 @@ namespace Project.Gameplay.Flow.States
             ctx.Battle.Apply(new CollectChestAction(chest.Id));
             ctx.Signals.Fire(new ChestCollectedSignal(chest.Id, gain));
 
+            // +N стартует от лейбла сундука и летит к лейблу игрока. Лейбл сундука одновременно прячется.
             if (ctx.Numbers != null)
             {
                 var number = ctx.Numbers.Rent();
-                // +N из сундука летит к игроку — как при убийстве врага.
-                number.PlayFlying("+" + gain, chest.Anchor.position, ctx.Player.Anchor,
+                var startPos = chest.PowerLabel != null ? chest.PowerLabel.transform.position : chest.Anchor.position;
+                var targetTransform = ctx.Player.PowerLabel != null
+                    ? ctx.Player.PowerLabel.transform
+                    : ctx.Player.Anchor;
+                if (chest.PowerLabel != null) chest.PowerLabel.SetVisible(false);
+                number.PlayFlying("+" + gain, startPos, targetTransform,
                     ctx.Balance.FloatingNumberDuration, ctx.Numbers, ct).Forget();
             }
 
-            ctx.Vfx.Play("chest_open", chest.Anchor.position);
+            ctx.Vfx.Play("chest_open", chest.Vfx.position);
+
+            // Игрок «радуется» открытию сундука, чтобы не стоять как столб.
+            ctx.Player.PlayVictory();
             await chest.PlayOpen(ct);
 
-            // На подлёте +N — обновляем PowerLabel и стартует апгрейд (gold-материал).
-            await UniTask.Delay(System.TimeSpan.FromSeconds(ctx.Balance.FloatingNumberDuration * 0.85f), cancellationToken: ct);
+            // Когда +N долетел: лейбл, pop, VFX-приёма, flair героя.
+            await UniTask.Delay(System.TimeSpan.FromSeconds(ctx.Balance.FloatingNumberDuration), cancellationToken: ct);
             ctx.Player.RefreshPower();
+            if (ctx.Player.PowerLabel != null) ctx.Player.PowerLabel.Pop();
+            ctx.Vfx.Play("power_gain", ctx.Player.Vfx.position);
             ctx.Signals.Fire(new PlayerPowerChangedSignal(ctx.Battle.Player.Power.Value));
+            ctx.Player.PlayPowerGain(ct).Forget();
 
+            // Большой VFX-вспышка апгрейда вокруг героя.
+            ctx.Vfx.Play("upgrade", ctx.Player.Vfx.position);
             await ctx.Player.PlayUpgrade(ct);
+            ctx.Player.PlayIdle();
 
             _flow.GoIdle();
         }

@@ -15,6 +15,8 @@ namespace Project.Gameplay.Units
 		[Tooltip("Точка, к которой бежит игрок (например, перед противником). Если не задана — используется корень префаба.")]
 		[SerializeField] protected Transform StopPoint;
 		[SerializeField] protected Transform AnchorPoint;
+		[Tooltip("Точка для спавна VFX (например, по центру тела). Если не задана — используется AnchorPoint.")]
+		[SerializeField] protected Transform VfxPoint;
 		[SerializeField] protected GameObject HighlightRing;
 
 		[Tooltip(
@@ -31,13 +33,16 @@ namespace Project.Gameplay.Units
 		public UnitKind Kind => Unit.Kind;
 		public Transform Anchor => AnchorPoint != null ? AnchorPoint : transform;
 		public Transform Stop => StopPoint != null ? StopPoint : transform;
+		public Transform Vfx => VfxPoint != null ? VfxPoint : Anchor;
+		public PowerLabel PowerLabel => Label;
 
 		public virtual void FaceTowards(Vector3 worldPosition)
 		{
-			var dir = worldPosition - transform.position;
-			dir.y = 0f;
+			// Крутим юнита только вокруг ЕГО собственного UP — это сохраняет наклон под BG-плоскость.
+			var localUp = transform.up;
+			var dir = Vector3.ProjectOnPlane(worldPosition - transform.position, localUp);
 			if (dir.sqrMagnitude < 0.0001f) return;
-			transform.rotation = Quaternion.LookRotation(dir);
+			transform.rotation = Quaternion.LookRotation(dir, localUp);
 		}
 
 		protected virtual void Awake()

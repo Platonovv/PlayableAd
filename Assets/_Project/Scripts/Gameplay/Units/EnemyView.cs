@@ -26,7 +26,7 @@ namespace Project.Gameplay.Units
         public async UniTask PlayDeath(CancellationToken ct)
         {
             if (_animator != null) _animator.CrossFadeInFixedTime(DeathHash, 0.05f);
-            if (_vfxOnDeath != null) Instantiate(_vfxOnDeath, Anchor.position, Quaternion.identity);
+            if (_vfxOnDeath != null) Instantiate(_vfxOnDeath, Vfx.position, Quaternion.identity);
 
             // Ждём полную анимацию смерти, затем плавно уменьшаем юнит до нуля.
             await UniTask.Delay(System.TimeSpan.FromSeconds(_balance.DeathAnimDuration), cancellationToken: ct);

@@ -66,17 +66,26 @@ namespace Project.Gameplay.Targeting
             return tex;
         }
 
-        public void Show(Transform from, Transform to)
+        public void Show(Transform from, Transform to) => Show(from, to, _color);
+
+        public void Show(Transform from, Transform to, Color color)
         {
             _from = from;
             _to = to;
             _line.enabled = true;
+            SetColor(color);
             if (_selectionGlow != null)
             {
                 _selectionGlow.SetActive(true);
                 _selectionGlow.transform.SetParent(to, false);
                 _selectionGlow.transform.localPosition = Vector3.zero;
             }
+        }
+
+        public void SetColor(Color color)
+        {
+            if (_runtimeMaterial != null) _runtimeMaterial.color = color;
+            if (_line != null) { _line.startColor = color; _line.endColor = color; }
         }
 
         public void Hide()

@@ -13,6 +13,8 @@ namespace Project.Gameplay
     {
         [SerializeField] private UnitsBank _bank;
         [SerializeField] private Transform _root;
+        [Tooltip("Поворот спавнящихся юнитов в Euler-углах. Подобран под наклон BG-плоскости.")]
+        [SerializeField] private Vector3 _spawnRotation = new(-15f, -180f, 0f);
 
         public sealed class Result
         {
@@ -35,6 +37,7 @@ namespace Project.Gameplay
             var playerUnit = new Unit(UnitKind.Player, new Power(level.Player.Power));
             var playerView = Instantiate(_bank.PlayerPrefab, parent);
             playerView.transform.position = ToWorld(level.Player.Position);
+            FaceCamera(playerView, camera);
             playerView.Configure(balance);
             playerView.Bind(playerUnit, camera);
             views[playerUnit.Id] = playerView;
@@ -55,6 +58,7 @@ namespace Project.Gameplay
                     continue;
                 }
                 view.transform.position = ToWorld(t.Position);
+                FaceCamera(view, camera);
                 if (view is EnemyView e) e.Configure(balance);
                 view.Bind(unit, camera);
                 views[unit.Id] = view;
@@ -76,5 +80,12 @@ namespace Project.Gameplay
         }
 
         private Vector3 ToWorld(Vector2 p) => new(p.x, 0f, p.y);
+
+        private void FaceCamera(UnitView view, Camera camera)
+        {
+            if (view == null) return;
+            // Поворот наклоняет юнита под BG-плоскость; значение крутится в инспекторе UnitSpawner.
+            view.transform.rotation = Quaternion.Euler(_spawnRotation);
+        }
     }
 }

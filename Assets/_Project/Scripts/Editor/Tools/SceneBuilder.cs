@@ -57,7 +57,7 @@ namespace Project.EditorTools.Tools
             // Камера сильно отодвинута — герои выглядят мелкими как на референсе Hero Wars.
             // BG (child камеры на дистанции 25) всё равно заполняет кадр.
             // Если в инспекторе захочешь приблизить — уменьшай Y и Z (например 18 и -15).
-            cameraGO.transform.position = new Vector3(0f, 28f, -22f);
+            cameraGO.transform.position = new Vector3(0f, 40f, -32f);
             cameraGO.transform.rotation = Quaternion.Euler(50f, 0f, 0f);
             var cam = cameraGO.GetComponent<Camera>();
             cam.orthographic = false;
@@ -105,7 +105,10 @@ namespace Project.EditorTools.Tools
             var floatingRoot = new GameObject("FloatingNumbersRoot");
             floatingRoot.transform.SetParent(flowGO.transform);
 
-            var floatingTemplate = CreateFloatingNumberTemplate(flowGO.transform);
+            // Подсовываем готовый prefab-asset; если его нет — fallback на runtime-template.
+            const string floatingPrefabPath = "Assets/_Project/Art/Prefabs/FloatingNumber.prefab";
+            var floatingPrefab = AssetDatabase.LoadAssetAtPath<FloatingNumber>(floatingPrefabPath);
+            if (floatingPrefab == null) floatingPrefab = CreateFloatingNumberTemplate(flowGO.transform);
 
             SetField(tapInput,   "_camera",      cam);
             SetField(vfxService, "_bank",        vfx);
@@ -113,7 +116,7 @@ namespace Project.EditorTools.Tools
             SetField(battleFlow, "_indicator",   indicator);
             SetField(battleFlow, "_vfx",         vfxService);
             SetField(battleFlow, "_shake",       screenShake);
-            SetField(battleFlow, "_floatingNumberPrefab", floatingTemplate);
+            SetField(battleFlow, "_floatingNumberPrefab", floatingPrefab);
             SetField(battleFlow, "_floatingNumbersRoot",  floatingRoot.transform);
 
             // ---------- Audio ----------
@@ -254,9 +257,9 @@ namespace Project.EditorTools.Tools
 
         private static LevelConfig CreateDefaultLevel(string path)
         {
-            // При перегенерации сцены всегда обновляем дефолты — раскладка изменилась под перспективную камеру.
+            // Если LevelConfig уже есть — НЕ перезаписываем (иначе ручные правки позиций пропадают).
             var existing = AssetDatabase.LoadAssetAtPath<LevelConfig>(path);
-            if (existing != null) AssetDatabase.DeleteAsset(path);
+            if (existing != null) return existing;
 
             var level = ScriptableObject.CreateInstance<LevelConfig>();
             // Hero Wars-стиль: статичная камера, всё поле боя в кадре. Герой слева сверху,
@@ -265,9 +268,9 @@ namespace Project.EditorTools.Tools
             level.Targets = new List<LevelConfig.TargetSpawn>
             {
                 new() { Kind = UnitKind.Chest, Position = new Vector2(  1f,    0f), Power = 3, PrefabKey = ""       },
-                new() { Kind = UnitKind.Enemy, Position = new Vector2(  4f,  -1.5f), Power = 3, PrefabKey = "goblin" },
-                new() { Kind = UnitKind.Enemy, Position = new Vector2( -3.5f, -3f),  Power = 5, PrefabKey = "ogre"   },
-                new() { Kind = UnitKind.Enemy, Position = new Vector2(  3f,    5f),  Power = 6, PrefabKey = "ogre"   },
+                new() { Kind = UnitKind.Enemy, Position = new Vector2(  1.5f,  -10f), Power = 3, PrefabKey = "goblin" },
+                new() { Kind = UnitKind.Enemy, Position = new Vector2( -3.5f, -3f),  Power = 6, PrefabKey = "ogre"   },
+                new() { Kind = UnitKind.Enemy, Position = new Vector2(  3f,    5f),  Power = 10, PrefabKey = "ogre"   },
             };
             AssetDatabase.CreateAsset(level, path);
             AssetDatabase.SaveAssets();
@@ -405,12 +408,23 @@ namespace Project.EditorTools.Tools
 
         private static void CreateBackground(Transform parent, Camera cam)
         {
-            // Ищем JPG/PNG фона в любом подкаталоге Art/.
+            // Сначала ищем "clean" вариант фона; если нет — fallback на любой BG-текстуру под Art/.
             Texture2D bg = null;
-            foreach (var guid in AssetDatabase.FindAssets("t:Texture2D BG", new[] { "Assets/_Project/Art" }))
+            var guids = AssetDatabase.FindAssets("t:Texture2D BG", new[] { "Assets/_Project/Art" });
+            foreach (var guid in guids)
             {
-                bg = AssetDatabase.LoadAssetAtPath<Texture2D>(AssetDatabase.GUIDToAssetPath(guid));
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                if (!path.Contains("clean", System.StringComparison.OrdinalIgnoreCase)) continue;
+                bg = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
                 if (bg != null) break;
+            }
+            if (bg == null)
+            {
+                foreach (var guid in guids)
+                {
+                    bg = AssetDatabase.LoadAssetAtPath<Texture2D>(AssetDatabase.GUIDToAssetPath(guid));
+                    if (bg != null) break;
+                }
             }
 
             var quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
@@ -435,10 +449,13 @@ namespace Project.EditorTools.Tools
             // Лёгкий запас 5%, чтобы не было щелей по краям при анимациях камеры.
             quad.transform.localScale = new Vector3(width * 1.05f, height * 1.05f, 1f);
 
-            var unlit = Shader.Find("Unlit/Texture") ?? Shader.Find("Mobile/Diffuse") ?? Shader.Find("Standard");
-            var mat = new Material(unlit) { name = "BG_Material" };
+            // Sprites/Default поддерживает и _MainTex, и tint через color — нужно для затемнения BG.
+            var shader = Shader.Find("Sprites/Default") ?? Shader.Find("Mobile/Diffuse") ?? Shader.Find("Standard");
+            var mat = new Material(shader) { name = "BG_Material" };
             if (bg != null && mat.HasProperty("_MainTex")) mat.mainTexture = bg;
-            else mat.color = new Color(0.12f, 0.18f, 0.28f, 1f);
+            // Слегка затемняем фон, чтобы 3D-юниты с яркими лейблами читались отчётливее.
+            // Если хочется ярче — поставь color = (1, 1, 1, 1) на Material BG.
+            mat.color = bg != null ? new Color(0.6f, 0.6f, 0.65f, 1f) : new Color(0.12f, 0.18f, 0.28f, 1f);
             quad.GetComponent<MeshRenderer>().sharedMaterial = mat;
         }
 

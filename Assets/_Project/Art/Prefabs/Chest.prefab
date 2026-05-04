@@ -116,7 +116,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Project.Runtime::Project.Gameplay.Units.ChestView
   Label: {fileID: 141815668863568799}
+  StopPoint: {fileID: 0}
   AnchorPoint: {fileID: 8257289133023719712}
+  VfxPoint: {fileID: 0}
   HighlightRing: {fileID: 1285770452932574174}
   WarningRing: {fileID: 0}
   _previewScale: 1.15
@@ -149,11 +151,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 0f8c3556bf31dbd4ca5a75f73eb6e7d3, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.8
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 0f8c3556bf31dbd4ca5a75f73eb6e7d3, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.01746
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 0f8c3556bf31dbd4ca5a75f73eb6e7d3, type: 3}
       propertyPath: m_LocalRotation.w

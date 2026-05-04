@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1001 &2950840063010975186
+--- !u!1001 &8756182338667243239
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -124,13 +124,17 @@ PrefabInstance:
       propertyPath: _frames.Array.data[17]
       value: 
       objectReference: {fileID: 21300000, guid: 63e81c6da4d3cf24d8f977732e696465, type: 3}
+    - target: {fileID: 602602094903269105, guid: 14c6ae3b9942dc948b0b2fd1119e1663, type: 3}
+      propertyPath: _frames.Array.data[18]
+      value: 
+      objectReference: {fileID: 21300000, guid: 7dfcceab422a2e146a2755296be6c3e9, type: 3}
     - target: {fileID: 2343890046915836965, guid: 14c6ae3b9942dc948b0b2fd1119e1663, type: 3}
       propertyPath: m_Sprite
       value: 
       objectReference: {fileID: 21300000, guid: b60e132ceec6874498efcd8cd9773c81, type: 3}
     - target: {fileID: 2541407024749985646, guid: 14c6ae3b9942dc948b0b2fd1119e1663, type: 3}
       propertyPath: m_Name
-      value: Vfx_ChestOpen
+      value: Vfx_Upgrade
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

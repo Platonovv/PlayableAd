@@ -45,37 +45,54 @@ namespace Project.Gameplay.Flow.States
 			if (willWin)
 			{
 				// Игрок бьёт → враг получает урон → анимация смерти → исчезает.
-				await ctx.Player.PlayAttack(ct);
+				// Если сила выше порога — играет супер-атака.
+				var useSuper = ctx.Battle.Player.Power.Value >= ctx.Balance.SuperAttackThreshold;
+				await (useSuper ? ctx.Player.PlaySuperAttack(ct) : ctx.Player.PlayAttack(ct));
 				ctx.Battle.Apply(new AttackAction(enemy.Id));
 
 				enemy.PlayHit();
 				ctx.Shake.Shake(ctx.Balance.HitShakeAmplitude, ctx.Balance.HitShakeDuration);
-				ctx.Vfx.Play("hit", enemy.Anchor.position);
+				ctx.Vfx.Play(useSuper ? "super_hit" : "hit", enemy.Vfx.position);
 				ctx.Signals.Fire(new AttackResolvedSignal(ctx.Battle.Player.Id, enemy.Id));
 
+				// +N стартует от лейбла врага и летит к лейблу игрока — лейбл врага одновременно прячется,
+				// чтобы создать иллюзию что число «вылетело» из него.
 				if (ctx.Numbers != null)
 				{
 					var number = ctx.Numbers.Rent();
+					var startPos = enemy.PowerLabel != null
+						               ? enemy.PowerLabel.transform.position
+						               : enemy.Anchor.position;
+					var targetTransform = ctx.Player.PowerLabel != null
+						                      ? ctx.Player.PowerLabel.transform
+						                      : ctx.Player.Anchor;
+					if (enemy.PowerLabel != null)
+						enemy.PowerLabel.SetVisible(false);
 					number.PlayFlying("+" + enemyPower,
-					                  enemy.Anchor.position,
-					                  ctx.Player.Anchor,
+					                  startPos,
+					                  targetTransform,
 					                  ctx.Balance.FloatingNumberDuration,
 					                  ctx.Numbers,
-					                  ct).Forget();
+					                  ct)
+					      .Forget();
 				}
 
 				// Дать видимую реакцию на удар, потом запустить смерть.
 				await UniTask.Delay(System.TimeSpan.FromSeconds(ctx.Balance.HitReactionDelay), cancellationToken: ct);
 
+				// Игрок возвращается в idle сразу после удара — нет смысла ждать смерть врага в боевой стойке.
+				ctx.Player.PlayIdle();
+
 				// Параллельно: число долетает до игрока и обновляет лейбл, враг проигрывает анимацию смерти.
+				ctx.Vfx.Play("death", enemy.Vfx.position);
 				var refreshTask = RefreshPlayerOnNumberLand(ctx, ct);
 				await enemy.PlayDeath(ct);
 				await refreshTask;
 
-				await ctx.Player.PlayRecover(ct);
-
-				if (ctx.Battle.IsOver) _flow.GoWon();
-				else                   _flow.GoIdle();
+				if (ctx.Battle.IsOver)
+					_flow.GoWon();
+				else
+					_flow.GoIdle();
 			}
 			else
 			{
@@ -85,7 +102,7 @@ namespace Project.Gameplay.Flow.States
 				await enemy.PlayAttack(ct);
 
 				ctx.Player.PlayHurt();
-				ctx.Vfx.Play("block", ctx.Player.Anchor.position);
+				ctx.Vfx.Play("block", ctx.Player.Vfx.position);
 				ctx.Shake.Shake(ctx.Balance.HitShakeAmplitude, ctx.Balance.HitShakeDuration);
 
 				await UniTask.Delay(System.TimeSpan.FromSeconds(ctx.Balance.HitReactionDelay), cancellationToken: ct);
@@ -98,10 +115,15 @@ namespace Project.Gameplay.Flow.States
 
 		private async UniTask RefreshPlayerOnNumberLand(BattleFlowContext ctx, CancellationToken ct)
 		{
-			// Когда +N "впитывается" в игрока — обновляем PowerLabel и эмитим сигнал.
-			await UniTask.Delay(System.TimeSpan.FromSeconds(ctx.Balance.FloatingNumberDuration * 0.85f), cancellationToken: ct);
+			// Когда +N долетел до игрока: обновляем лейбл, pop, VFX-приёма и flair-эффект героя.
+			await UniTask.Delay(System.TimeSpan.FromSeconds(ctx.Balance.FloatingNumberDuration),
+			                    cancellationToken: ct);
 			ctx.Player.RefreshPower();
+			if (ctx.Player.PowerLabel != null)
+				ctx.Player.PowerLabel.Pop();
+			ctx.Vfx.Play("power_gain", ctx.Player.Vfx.position);
 			ctx.Signals.Fire(new PlayerPowerChangedSignal(ctx.Battle.Player.Power.Value));
+			ctx.Player.PlayPowerGain(ct).Forget();
 		}
 	}
 }

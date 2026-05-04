@@ -35,7 +35,6 @@ Transform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &2343890046915836965
 SpriteRenderer:
-  serializedVersion: 2
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -51,11 +50,6 @@ SpriteRenderer:
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 0
   m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -77,12 +71,10 @@ SpriteRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 951c2bedeaa8026448847249d472853a, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 0df08003763781a4b8fd7d18970ea4dd, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -91,6 +83,7 @@ SpriteRenderer:
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
+  m_MaskInteraction: 0
   m_SpriteSortPoint: 0
 --- !u!114 &602602094903269105
 MonoBehaviour:
@@ -106,20 +99,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: Project.Runtime::Project.Gameplay.Vfx.SpriteSequencePlayer
   _renderer: {fileID: 2343890046915836965}
   _frames:
-  - {fileID: 21300000, guid: 951c2bedeaa8026448847249d472853a, type: 3}
-  - {fileID: 21300000, guid: c6b76202eaaa7534482c252b925fa079, type: 3}
-  - {fileID: 21300000, guid: 3b361f30011a9c949b5a34a3a9ac0115, type: 3}
-  - {fileID: 21300000, guid: d19b0c971e371824f9c09819d1497e03, type: 3}
-  - {fileID: 21300000, guid: 357066fe05bbc0640918e7b6c3684003, type: 3}
-  - {fileID: 21300000, guid: 7c7f50bacdf0411479ad940cd9272497, type: 3}
-  - {fileID: 21300000, guid: 5d92874e68475f148858619272e62d1f, type: 3}
-  - {fileID: 21300000, guid: a568643fd13ac754c977c9d2c255b9f6, type: 3}
-  - {fileID: 21300000, guid: 2a8edf52702f47b479524d767957bbc1, type: 3}
-  - {fileID: 21300000, guid: 70f36eecb1d417d4b93a8bdd0f5a4239, type: 3}
-  - {fileID: 21300000, guid: 3ad4864d7c210fe4c871bd620fc326b6, type: 3}
-  - {fileID: 21300000, guid: c1815c73eaf89fa47ab0319103fac420, type: 3}
-  - {fileID: 21300000, guid: e3fb96ba36ab30340b19644c43cdbffe, type: 3}
-  - {fileID: 21300000, guid: 8a8da4893e81e0842889817532df287c, type: 3}
+  - {fileID: 21300000, guid: 0df08003763781a4b8fd7d18970ea4dd, type: 3}
+  - {fileID: 21300000, guid: d4facc015de89ba45a90d1c06d128874, type: 3}
+  - {fileID: 21300000, guid: 8aa814f21f6ebd643b919b63139a75a8, type: 3}
+  - {fileID: 21300000, guid: a0394b208e356ab428c314820f121701, type: 3}
+  - {fileID: 21300000, guid: fe3591b733d8cab4d976338e07c46c71, type: 3}
+  - {fileID: 21300000, guid: 20575175fee2c584f9f98825bfb88e81, type: 3}
+  - {fileID: 21300000, guid: c74baf6df61db734fa05e193453116b4, type: 3}
+  - {fileID: 21300000, guid: 32f9c2f21d44cd5468cbea6580f5c57b, type: 3}
+  - {fileID: 21300000, guid: 30c5e241ad6982d41bc8ce084fb9ab4d, type: 3}
+  - {fileID: 21300000, guid: be28149495cba57419a83df84a48bd70, type: 3}
+  - {fileID: 21300000, guid: 86c2343ec2724124ea3b5b014dc3342e, type: 3}
+  - {fileID: 21300000, guid: 0380192f81ea4804c94b1dedc33a5ea0, type: 3}
+  - {fileID: 21300000, guid: f9ec16bc7a90a304c8c50a565a36ede4, type: 3}
+  - {fileID: 21300000, guid: 5a4e3172a0aaa374c85507bdbfd93976, type: 3}
+  - {fileID: 21300000, guid: d61eab588e52c9640b7366f5957c1b30, type: 3}
+  - {fileID: 21300000, guid: 41f9b9a574550864fb104903236d9b23, type: 3}
   _fps: 15
   _loop: 0
   _disableOnFinish: 1
+  _billboardToCamera: 1

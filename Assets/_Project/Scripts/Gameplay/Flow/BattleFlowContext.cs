@@ -6,6 +6,7 @@ using Project.Gameplay.CameraFx;
 using Project.Gameplay.Targeting;
 using Project.Gameplay.Units;
 using Project.Gameplay.Vfx;
+using UnityEngine;
 
 namespace Project.Gameplay.Flow
 {
@@ -25,5 +26,20 @@ namespace Project.Gameplay.Flow
         public BalanceConfig Balance;
         public SignalBus Signals;
         public UnitId PendingTarget;
+        public Color EnemyArrowColor;
+        public Color WinnableArrowColor;
+        public Color ChestArrowColor;
+
+        public Color ColorFor(UnitView view)
+        {
+            if (view == null) return Color.white;
+            switch (view.Kind)
+            {
+                case UnitKind.Chest: return ChestArrowColor;
+                case UnitKind.Enemy:
+                    return Battle.Player.Power >= view.Unit.Power ? WinnableArrowColor : EnemyArrowColor;
+                default: return Color.white;
+            }
+        }
     }
 }

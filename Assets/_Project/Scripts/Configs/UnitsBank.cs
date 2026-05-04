@@ -29,7 +29,6 @@ namespace Project.Configs
                 for (var i = 0; i < Enemies.Length; i++)
                     if (Enemies[i].Key == key) return Enemies[i].Prefab;
             }
-            // Fallback: первый ненулевой префаб, чтобы спавн не падал на пустом ключе.
             for (var i = 0; i < Enemies.Length; i++)
                 if (Enemies[i].Prefab != null) return Enemies[i].Prefab;
             return null;

@@ -33,7 +33,7 @@ namespace Project.Core
             duration = Mathf.Max(0.0001f, duration);
             while (elapsed < duration)
             {
-                if (owner == null) return;            // объект уничтожен — выходим тихо
+                if (owner == null) return;
                 if (ct.IsCancellationRequested) return;
                 elapsed += Time.deltaTime;
                 var k = ease(Mathf.Clamp01(elapsed / duration));
@@ -50,18 +50,15 @@ namespace Project.Core
             var origin = t.localScale;
             var elapsed = 0f;
             duration = Mathf.Max(0.0001f, duration);
-            while (elapsed < duration)
+            while (elapsed < duration && t != null && !ct.IsCancellationRequested)
             {
-                if (t == null) return;
-                if (ct.IsCancellationRequested) return;
                 elapsed += Time.deltaTime;
                 var k = elapsed / duration;
                 var bump = Mathf.Sin(k * Mathf.PI) * amplitude;
                 t.localScale = origin * (1f + bump);
                 await UniTask.Yield(PlayerLoopTiming.Update, ct).SuppressCancellationThrow();
             }
-            if (t == null) return;
-            t.localScale = origin;
+            if (t != null) t.localScale = origin;
         }
 
         private static TVal Lerp<TVal>(TVal a, TVal b, float k) where TVal : struct

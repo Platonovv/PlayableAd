@@ -39,13 +39,10 @@ namespace Project.Gameplay.Flow.States
 			var enemyPower = enemy.Unit.Power.Value;
 			var willWin = ctx.Battle.Player.Power >= enemy.Unit.Power;
 
-			// Противник поворачивается лицом к игроку перед самим боем.
 			enemy.FaceTowards(ctx.Player.transform.position);
 
 			if (willWin)
 			{
-				// Игрок бьёт → враг получает урон → анимация смерти → исчезает.
-				// Если сила выше порога — играет супер-атака.
 				var useSuper = ctx.Battle.Player.Power.Value >= ctx.Balance.SuperAttackThreshold;
 				await (useSuper ? ctx.Player.PlaySuperAttack(ct) : ctx.Player.PlayAttack(ct));
 				ctx.Battle.Apply(new AttackAction(enemy.Id));
@@ -55,8 +52,6 @@ namespace Project.Gameplay.Flow.States
 				ctx.Vfx.Play(useSuper ? "super_hit" : "hit", enemy.Vfx.position);
 				ctx.Signals.Fire(new AttackResolvedSignal(ctx.Battle.Player.Id, enemy.Id));
 
-				// +N стартует от лейбла врага и летит к лейблу игрока — лейбл врага одновременно прячется,
-				// чтобы создать иллюзию что число «вылетело» из него.
 				if (ctx.Numbers != null)
 				{
 					var number = ctx.Numbers.Rent();
@@ -77,13 +72,10 @@ namespace Project.Gameplay.Flow.States
 					      .Forget();
 				}
 
-				// Дать видимую реакцию на удар, потом запустить смерть.
 				await UniTask.Delay(System.TimeSpan.FromSeconds(ctx.Balance.HitReactionDelay), cancellationToken: ct);
 
-				// Игрок возвращается в idle сразу после удара — нет смысла ждать смерть врага в боевой стойке.
 				ctx.Player.PlayIdle();
 
-				// Параллельно: число долетает до игрока и обновляет лейбл, враг проигрывает анимацию смерти.
 				ctx.Vfx.Play("death", enemy.Vfx.position);
 				var refreshTask = RefreshPlayerOnNumberLand(ctx, ct);
 				await enemy.PlayDeath(ct);
@@ -96,7 +88,6 @@ namespace Project.Gameplay.Flow.States
 			}
 			else
 			{
-				// Враг сильнее → он бьёт первым → игрок получает урон → анимация смерти → исчезает.
 				ctx.Signals.Fire(new AttackFailedSignal(ctx.Battle.Player.Id, enemy.Id));
 
 				await enemy.PlayAttack(ct);
@@ -110,12 +101,11 @@ namespace Project.Gameplay.Flow.States
 				_flow.GoLost();
 			}
 
-			_ = preAttackPower; // подавляем предупреждение, если в дальнейшем не используется
+			_ = preAttackPower;
 		}
 
 		private async UniTask RefreshPlayerOnNumberLand(BattleFlowContext ctx, CancellationToken ct)
 		{
-			// Когда +N долетел до игрока: обновляем лейбл, pop, VFX-приёма и flair-эффект героя.
 			await UniTask.Delay(System.TimeSpan.FromSeconds(ctx.Balance.FloatingNumberDuration),
 			                    cancellationToken: ct);
 			ctx.Player.RefreshPower();

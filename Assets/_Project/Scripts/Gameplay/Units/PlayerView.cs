@@ -7,7 +7,7 @@ using UnityEngine;
 namespace Project.Gameplay.Units
 {
 	/// <summary>
-	/// View игрока: анимации, движение к цели и апгрейд (смена материала на gold после сундука).
+	/// View игрока: анимации, движение к цели и апгрейд (получение меча из сундука).
 	/// </summary>
 	public sealed class PlayerView : UnitView
 	{
@@ -21,18 +21,25 @@ namespace Project.Gameplay.Units
 		private static readonly int SuperAttackHash = Animator.StringToHash("SuperAttack");
 
 		[SerializeField] private Animator _animator;
-		[SerializeField] private Renderer _bodyRenderer;
-		[SerializeField] private Material _defaultMaterial;
-		[SerializeField] private Material _upgradedMaterial;
-		[SerializeField] private ParticleSystem _upgradeBurst;
+		[SerializeField] private Transform _sword;
 
 		private BalanceConfig _balance;
 
+		public Vector3 SwordTarget => _sword != null ? _sword.position : Anchor.position;
+
 		public void Configure(BalanceConfig balance) => _balance = balance;
+
+		protected override void Awake()
+		{
+			base.Awake();
+			if (_sword != null)
+				_sword.localScale = Vector3.zero;
+			if (_animator != null)
+				_animator.applyRootMotion = false;
+		}
 
 		public async UniTask MoveTo(Vector3 destination, CancellationToken ct)
 		{
-			// Игнорируем Y назначения — все юниты живут в одной плоскости, заданной стартовой высотой игрока.
 			destination.y = transform.position.y;
 
 			PlayState(RunHash);
@@ -83,72 +90,14 @@ namespace Project.Gameplay.Units
 		public async UniTask PlayUpgrade(CancellationToken ct)
 		{
 			PlayState(UpgradeHash);
-			if (_upgradeBurst != null)
-				_upgradeBurst.Play();
-			if (_bodyRenderer != null && _upgradedMaterial != null)
-				_bodyRenderer.sharedMaterial = _upgradedMaterial;
+			if (_sword != null)
+				_sword.localScale = Vector3.one;
 
 			await RandomFlair(_balance.UpgradeDuration, ct);
-			// Хвост: дать анимации Upgrade доиграть, прежде чем стейт сменится.
 			await UniTask.Delay(System.TimeSpan.FromSeconds(_balance.UpgradeAnimTail), cancellationToken: ct);
 		}
 
 		public UniTask PlayPowerGain(CancellationToken ct) => RandomFlair(_balance.UpgradeDuration * 0.6f, ct);
-
-		private UniTask RandomFlair(float duration, CancellationToken ct)
-		{
-			switch (Random.Range(0, 3))
-			{
-				case 0:
-					return Tween.Punch(transform, 0.30f, duration, ct);
-				case 1:
-					return HopUp(duration, ct);
-				default:
-					return SpinAroundY(duration, ct);
-			}
-		}
-
-		private async UniTask HopUp(float duration, CancellationToken ct)
-		{
-			const float hopHeight = 0.7f;
-			var startY = transform.position.y;
-			var elapsed = 0f;
-			while (elapsed < duration)
-			{
-				if (this == null || ct.IsCancellationRequested)
-					return;
-
-				elapsed += Time.deltaTime;
-				var k = Mathf.Clamp01(elapsed / duration);
-				var y = startY + Mathf.Sin(k * Mathf.PI) * hopHeight;
-				var p = transform.position;
-				p.y = y;
-				transform.position = p;
-				await UniTask.Yield(PlayerLoopTiming.Update, ct).SuppressCancellationThrow();
-			}
-
-			var end = transform.position;
-			end.y = startY;
-			transform.position = end;
-		}
-
-		private async UniTask SpinAroundY(float duration, CancellationToken ct)
-		{
-			var startEuler = transform.eulerAngles;
-			var elapsed = 0f;
-			while (elapsed < duration)
-			{
-				if (this == null || ct.IsCancellationRequested)
-					return;
-
-				elapsed += Time.deltaTime;
-				var k = Mathf.Clamp01(elapsed / duration);
-				transform.eulerAngles = new Vector3(startEuler.x, startEuler.y + 360f * k, startEuler.z);
-				await UniTask.Yield(PlayerLoopTiming.Update, ct).SuppressCancellationThrow();
-			}
-
-			transform.eulerAngles = startEuler;
-		}
 
 		public void PlayIdle() => PlayState(IdleHash);
 
@@ -159,20 +108,12 @@ namespace Project.Gameplay.Units
 		public async UniTask PlayDeath(CancellationToken ct)
 		{
 			PlayState(DeathHash);
-			// Сначала полная анимация смерти, потом плавный уход в ноль.
 			await UniTask.Delay(System.TimeSpan.FromSeconds(_balance.DeathAnimDuration), cancellationToken: ct);
 			await Tween.Scale(transform, Vector3.zero, _balance.DeathFadeDuration, Ease.InQuad, ct);
 		}
 
-		private void PlayState(int hash)
-		{
-			if (_animator != null)
-				_animator.CrossFadeInFixedTime(hash, 0.08f);
-		}
-
 		public override void FaceTowards(Vector3 worldTarget)
 		{
-			// Поворот вокруг локального UP — сохраняет наклон под BG-плоскость.
 			var localUp = transform.up;
 			var dir = Vector3.ProjectOnPlane(worldTarget - transform.position, localUp);
 			if (dir.sqrMagnitude < 0.0001f)
@@ -181,6 +122,113 @@ namespace Project.Gameplay.Units
 			transform.rotation = Quaternion.Slerp(transform.rotation,
 			                                      Quaternion.LookRotation(dir, localUp),
 			                                      18f * Time.deltaTime);
+		}
+
+		private UniTask RandomFlair(float duration, CancellationToken ct)
+		{
+			switch (Random.Range(0, 5))
+			{
+				case 0:
+					return Tween.Punch(transform, 0.30f, duration, ct);
+				case 1:
+					return HopUp(duration, ct);
+				case 2:
+					return Squash(duration, ct);
+				case 3:
+					return DoubleHop(duration, ct);
+				default:
+					return SpeedBurst(duration, ct);
+			}
+		}
+
+		private async UniTask SpeedBurst(float duration, CancellationToken ct)
+		{
+			if (_animator == null) return;
+			var prev = _animator.speed;
+			_animator.speed = 1.6f;
+
+			var elapsed = 0f;
+			while (elapsed < duration && this != null && !ct.IsCancellationRequested)
+			{
+				elapsed += Time.deltaTime;
+				await UniTask.Yield(PlayerLoopTiming.Update, ct).SuppressCancellationThrow();
+			}
+
+			if (this != null && _animator != null)
+				_animator.speed = prev;
+		}
+
+		private async UniTask HopUp(float duration, CancellationToken ct)
+		{
+			const float hopHeight = 0.7f;
+			var startY = transform.position.y;
+			var elapsed = 0f;
+			while (elapsed < duration && this != null && !ct.IsCancellationRequested)
+			{
+				elapsed += Time.deltaTime;
+				var k = Mathf.Clamp01(elapsed / duration);
+				var y = startY + Mathf.Sin(k * Mathf.PI) * hopHeight;
+				var p = transform.position;
+				p.y = y;
+				transform.position = p;
+				await UniTask.Yield(PlayerLoopTiming.Update, ct).SuppressCancellationThrow();
+			}
+
+			if (this != null)
+			{
+				var end = transform.position;
+				end.y = startY;
+				transform.position = end;
+			}
+		}
+
+		private async UniTask Squash(float duration, CancellationToken ct)
+		{
+			var origin = transform.localScale;
+			var elapsed = 0f;
+			while (elapsed < duration && this != null && !ct.IsCancellationRequested)
+			{
+				elapsed += Time.deltaTime;
+				var k = Mathf.Clamp01(elapsed / duration);
+				var s = Mathf.Sin(k * Mathf.PI * 2f);
+				transform.localScale = new Vector3(origin.x * (1f + s * 0.18f),
+				                                   origin.y * (1f - s * 0.18f),
+				                                   origin.z * (1f + s * 0.18f));
+				await UniTask.Yield(PlayerLoopTiming.Update, ct).SuppressCancellationThrow();
+			}
+
+			if (this != null)
+				transform.localScale = origin;
+		}
+
+		private async UniTask DoubleHop(float duration, CancellationToken ct)
+		{
+			const float hopHeight = 0.4f;
+			var startY = transform.position.y;
+			var elapsed = 0f;
+			while (elapsed < duration && this != null && !ct.IsCancellationRequested)
+			{
+				elapsed += Time.deltaTime;
+				var k = Mathf.Clamp01(elapsed / duration);
+				var y = startY + Mathf.Abs(Mathf.Sin(k * Mathf.PI * 2f)) * hopHeight;
+				var p = transform.position;
+				p.y = y;
+				transform.position = p;
+				await UniTask.Yield(PlayerLoopTiming.Update, ct).SuppressCancellationThrow();
+			}
+
+			if (this != null)
+			{
+				var end = transform.position;
+				end.y = startY;
+				transform.position = end;
+			}
+		}
+
+		private void PlayState(int hash)
+		{
+			if (_animator != null)
+				_animator.CrossFadeInFixedTime(hash, 0.08f);
 		}
 	}
 }

@@ -25,7 +25,6 @@ namespace Project.EditorTools.Tools
         [MenuItem("Playable/Tools/Build Size Audit")]
         public static void Audit()
         {
-            // 1. Все ассеты под нашими корнями.
             var allAssets = new HashSet<string>();
             foreach (var root in Roots)
             {
@@ -36,11 +35,13 @@ namespace Project.EditorTools.Tools
                     if (string.IsNullOrEmpty(p)) continue;
                     if (AssetDatabase.IsValidFolder(p)) continue;
                     if (p.EndsWith(".meta")) continue;
+                    if (p.EndsWith(".jslib")) continue;
+                    if (p.EndsWith(".jspre")) continue;
+                    if (p.EndsWith(".jspost")) continue;
                     allAssets.Add(p);
                 }
             }
 
-            // 2. Зависимости всех включённых сцен (рекурсивно).
             var used = new HashSet<string>();
             foreach (var s in EditorBuildSettings.scenes)
             {
@@ -49,7 +50,6 @@ namespace Project.EditorTools.Tools
                     used.Add(dep);
             }
 
-            // 3. Diff — то, что не используется.
             var unused = allAssets.Where(p => !used.Contains(p))
                                   .Select(p => (path: p, size: GetSize(p)))
                                   .Where(t => t.size > 0)
@@ -59,7 +59,6 @@ namespace Project.EditorTools.Tools
             var totalUnused = unused.Sum(t => t.size);
             var totalAll = allAssets.Sum(p => GetSize(p));
 
-            // 4. Отчёт.
             var sb = new StringBuilder();
             sb.AppendLine("=== Build Size Audit ===");
             sb.AppendLine($"Корни: {string.Join(", ", Roots)}");
@@ -75,7 +74,6 @@ namespace Project.EditorTools.Tools
 
             Debug.Log(sb.ToString());
 
-            // Полный список отдельным сообщением.
             if (unused.Count > 30)
             {
                 var full = new StringBuilder();
@@ -85,7 +83,6 @@ namespace Project.EditorTools.Tools
                 Debug.Log(full.ToString());
             }
 
-            // 5. Предложить удалить.
             if (unused.Count == 0)
             {
                 EditorUtility.DisplayDialog("Build Size Audit", "Чисто! Все ассеты используются.", "OK");

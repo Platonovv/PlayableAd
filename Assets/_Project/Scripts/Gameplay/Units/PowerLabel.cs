@@ -45,7 +45,6 @@ namespace Project.Gameplay.Units
 
 		public void Pop()
 		{
-			// Большая амплитуда — лейбл «выпрыгивает» на прилёт +N, читается лучше.
 			Tween.Punch(transform, 0.65f, 0.35f).Forget();
 		}
 

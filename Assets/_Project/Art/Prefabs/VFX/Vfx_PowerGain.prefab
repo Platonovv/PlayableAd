@@ -124,6 +124,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Vfx_PowerGain
       objectReference: {fileID: 0}
+    - target: {fileID: 2541407024749985646, guid: 14c6ae3b9942dc948b0b2fd1119e1663, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

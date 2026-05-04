@@ -60,7 +60,6 @@ namespace Project.Gameplay.Targeting
                 return;
             }
 
-            // Игрока в preview не показываем — иначе можно "выбрать самого себя".
             if (hit.Kind == UnitKind.Player)
             {
                 if (_previewId != null) ClearPreview();

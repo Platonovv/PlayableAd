@@ -1,6 +1,7 @@
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Project.Core;
+using Project.Domain;
 using UnityEngine;
 
 namespace Project.Gameplay.Units
@@ -14,16 +15,17 @@ namespace Project.Gameplay.Units
 
         [SerializeField] private Animator _animator;
         [SerializeField] private ParticleSystem _openVfx;
-        [Tooltip("Амплитуда покачивания idle. 0 — выключено, юнит остаётся в плоскости.")]
         [SerializeField] private float _idleBobAmplitude = 0f;
         [SerializeField] private float _idleBobSpeed = 2f;
 
         private Vector3 _basePosition;
+        private bool _basePositionCached;
 
-        protected override void Awake()
+        public override void Bind(Unit unit, Camera camera)
         {
-            base.Awake();
+            base.Bind(unit, camera);
             _basePosition = transform.localPosition;
+            _basePositionCached = true;
         }
 
         public async UniTask PlayOpen(CancellationToken ct)
@@ -37,6 +39,7 @@ namespace Project.Gameplay.Units
 
         private void Update()
         {
+            if (!_basePositionCached) return;
             if (Unit == null || !Unit.IsAlive) return;
             if (_idleBobAmplitude <= 0f) return;
             var bob = Mathf.Sin(Time.time * _idleBobSpeed) * _idleBobAmplitude;

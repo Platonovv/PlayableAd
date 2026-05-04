@@ -12,15 +12,11 @@ namespace Project.Gameplay.Units
 	public abstract class UnitView : MonoBehaviour, ITappable
 	{
 		[SerializeField] protected PowerLabel Label;
-		[Tooltip("Точка, к которой бежит игрок (например, перед противником). Если не задана — используется корень префаба.")]
 		[SerializeField] protected Transform StopPoint;
 		[SerializeField] protected Transform AnchorPoint;
-		[Tooltip("Точка для спавна VFX (например, по центру тела). Если не задана — используется AnchorPoint.")]
 		[SerializeField] protected Transform VfxPoint;
 		[SerializeField] protected GameObject HighlightRing;
 
-		[Tooltip(
-			"Опционально: красное кольцо для preview слишком сильного врага. Если не задано — fallback на обычный HighlightRing.")]
 		[SerializeField] protected GameObject WarningRing;
 		[SerializeField] private float _previewScale = 1.15f;
 		[SerializeField] private float _previewDuration = 0.12f;
@@ -38,7 +34,6 @@ namespace Project.Gameplay.Units
 
 		public virtual void FaceTowards(Vector3 worldPosition)
 		{
-			// Крутим юнита только вокруг ЕГО собственного UP — это сохраняет наклон под BG-плоскость.
 			var localUp = transform.up;
 			var dir = Vector3.ProjectOnPlane(worldPosition - transform.position, localUp);
 			if (dir.sqrMagnitude < 0.0001f) return;
@@ -96,7 +91,6 @@ namespace Project.Gameplay.Units
 
 			if (value)
 			{
-				// Если есть отдельный warning-ring — показываем его, иначе fallback на обычный.
 				var ring = isWarning && WarningRing != null ? WarningRing : HighlightRing;
 				if (HighlightRing != null)
 					HighlightRing.SetActive(ring == HighlightRing);

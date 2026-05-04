@@ -81,9 +81,6 @@ namespace Project.Gameplay.Flow
 			signals.Subscribe<TargetSelectedSignal>(OnTargetSelected);
 			signals.Subscribe<TargetPreviewSignal>(OnTargetPreview);
 
-			// PowerLabel над головой игрока обновляем вручную в стейтах после того, как
-			// летящее +N "долетит" до игрока — иначе число у героя меняется раньше эффекта.
-
 			_fsm.Set(_idle);
 		}
 
@@ -116,13 +113,10 @@ namespace Project.Gameplay.Flow
 			if (_previewing != null) _previewing.SetPreview(false);
 			_previewing = view;
 
-			// Если враг сильнее — показываем «warning» preview (красное кольцо).
 			var isWarning = view.Kind == Project.Domain.UnitKind.Enemy
 			                && _ctx.Battle.Player.Power < view.Unit.Power;
 			_previewing.SetPreview(true, isWarning);
 
-			// Обновляем _highlighted для будущей очистки при переходе в Idle/Won.
-			// SetHighlighted НЕ зовём — кольца уже управляются SetPreview.
 			_highlighted = view;
 			_ctx.Indicator.Show(_ctx.Player.transform, view.Stop, _ctx.ColorFor(view));
 		}
@@ -142,12 +136,9 @@ namespace Project.Gameplay.Flow
 			if (!_ctx.Views.TryGetValue(signal.TargetId, out var view) || !view.Unit.IsAlive)
 				return;
 
-			// Тап по самому игроку — игнор: ходить к самому себе бессмысленно.
 			if (view.Kind == Project.Domain.UnitKind.Player)
 				return;
 
-			// Коммит: пользователь действительно хочет атаковать или открыть сундук.
-			// Если враг сильнее — игрок всё равно идёт, получает удар и проигрывает (см. AttackState).
 			if (_previewing != null) _previewing.SetPreview(false);
 			_previewing = null;
 			Highlight(view);

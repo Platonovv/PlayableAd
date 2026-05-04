@@ -68,6 +68,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8932217660074776563, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 4
+      objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 8298516055802294066, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
     m_RemovedGameObjects:
@@ -135,13 +139,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Project.Runtime::Project.Gameplay.Units.EnemyView
   Label: {fileID: 2972411197007556126}
+  StopPoint: {fileID: 0}
   AnchorPoint: {fileID: 6494256714696070305}
+  VfxPoint: {fileID: 0}
   HighlightRing: {fileID: 4134319642372529759}
   WarningRing: {fileID: 2359605531788840913}
   _previewScale: 1.15
   _previewDuration: 0.12
   _animator: {fileID: 1826803765533654803}
-  _vfxOnDeath: {fileID: 0}
 --- !u!1001 &7228629976519120593
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -2,9 +2,6 @@ using System;
 
 namespace Project.Domain
 {
-	/// <summary>
-	/// Сила юнита: обёртка над int с клампингом в неотрицательную область и арифметикой.
-	/// </summary>
 	public readonly struct Power : IEquatable<Power>, IComparable<Power>
 	{
 		public static readonly Power Zero = new(0);

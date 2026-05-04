@@ -24,15 +24,15 @@ namespace Project.EditorTools.Tools
             t.mipmapEnabled = false;
             t.filterMode = FilterMode.Bilinear;
             t.alphaIsTransparency = true;
-            t.maxTextureSize = 512;
+            t.maxTextureSize = 256;
             t.crunchedCompression = true;
-            t.compressionQuality = 50;
+            t.compressionQuality = 40;
 
             var settings = t.GetDefaultPlatformTextureSettings();
             settings.format = TextureImporterFormat.Automatic;
-            settings.maxTextureSize = 512;
+            settings.maxTextureSize = 256;
             settings.crunchedCompression = true;
-            settings.compressionQuality = 50;
+            settings.compressionQuality = 40;
             t.SetPlatformTextureSettings(settings);
         }
     }

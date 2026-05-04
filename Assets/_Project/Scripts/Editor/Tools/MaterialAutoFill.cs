@@ -29,14 +29,12 @@ namespace Project.EditorTools.Tools
 
                 var changed = false;
 
-                // 1. Шейдер: если сломан/URP — переходим на Mobile/Diffuse.
                 if (IsBrokenShader(mat.shader))
                 {
                     mat.shader = mobile;
                     changed = true;
                 }
 
-                // 2. Главная текстура: если пусто — ищем подходящую.
                 if (mat.HasProperty("_MainTex") && mat.mainTexture == null)
                 {
                     var tex = FindTextureNear(matPath, mat.name);
@@ -86,7 +84,7 @@ namespace Project.EditorTools.Tools
                 {
                     var tpath = AssetDatabase.GUIDToAssetPath(tg);
                     var dir = Path.GetDirectoryName(tpath)?.Replace('\\', '/');
-                    if (dir != folder) continue; // только прямой каталог, не вложенные
+                    if (dir != folder) continue;
                     var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(tpath);
                     if (tex == null) continue;
 
@@ -97,7 +95,7 @@ namespace Project.EditorTools.Tools
                         best = tex;
                     }
                 }
-                if (best != null) break; // нашли в matFolder — в parent уже не лезем
+                if (best != null) break;
             }
 
             return best;
@@ -105,7 +103,6 @@ namespace Project.EditorTools.Tools
 
         private static string Normalize(string s)
         {
-            // Убираем регистр, цифровые суффиксы и общие слова, чтобы лучше матчить.
             s = s.ToLowerInvariant().Replace(" copy", "");
             for (var i = 0; i < 10; i++) s = s.Replace(i.ToString(), "");
             s = s.Replace("up", "").Replace("hq", "").Replace("fb_", "").Replace("df_", "").Trim('_', ' ');
@@ -114,11 +111,9 @@ namespace Project.EditorTools.Tools
 
         private static int MatchScore(string a, string b)
         {
-            // Длина общего префикса: чем длиннее — тем ближе соответствие.
             var n = Mathf.Min(a.Length, b.Length);
             var i = 0;
             while (i < n && a[i] == b[i]) i++;
-            // Бонус если одно содержит другое целиком.
             if (i < n && (a.Contains(b) || b.Contains(a))) i += Mathf.Min(a.Length, b.Length) / 2;
             return i;
         }

@@ -30,8 +30,6 @@ namespace Project.Gameplay.Flow.States
 				return;
 			}
 
-			// Бежим к точке остановки, заданной в инспекторе UnitView (Stop).
-			// Если StopPoint не задан, fallback — корень префаба.
 			ctx.Indicator.Show(ctx.Player.transform, view.Stop, ctx.ColorFor(view));
 			await ctx.Player.MoveTo(view.Stop.position, ct);
 			ctx.Indicator.Hide();

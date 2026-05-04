@@ -24,7 +24,6 @@ namespace Project.Configs
             public UnitKind Kind;
             public Vector2 Position;
             public int Power;
-            [Tooltip("Optional id used by the view layer to pick a specific prefab variant.")]
             public string PrefabKey;
         }
 

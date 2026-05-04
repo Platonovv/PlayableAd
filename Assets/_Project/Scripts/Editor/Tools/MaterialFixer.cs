@@ -41,7 +41,6 @@ namespace Project.EditorTools.Tools
                 fixedCount++;
             }
 
-            // Дополнительно: материалы, встроенные в FBX, требуют их «выгрузки» — пройдёмся по импортёрам.
             var modelGuids = AssetDatabase.FindAssets("t:Model", new[] { "Assets/_Project" });
             foreach (var g in modelGuids)
             {

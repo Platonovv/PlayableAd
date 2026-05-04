@@ -44,19 +44,12 @@ namespace Project.EditorTools.Tools
 
             var scene = OpenOrCreateScene();
 
-            // Пустая стартовая сцена — выкидываем всё, что там было.
             foreach (var go in scene.GetRootGameObjects())
                 Object.DestroyImmediate(go);
 
-            // ---------- Камера ----------
-            // Статичная top-down перспектива в духе Hero Wars: всё поле боя видно сразу,
-            // герой бегает внутри кадра. Камера за ним не ездит.
             var cameraGO = new GameObject("Main Camera",
                 typeof(Camera), typeof(AudioListener), typeof(ScreenShake));
             cameraGO.tag = "MainCamera";
-            // Камера сильно отодвинута — герои выглядят мелкими как на референсе Hero Wars.
-            // BG (child камеры на дистанции 25) всё равно заполняет кадр.
-            // Если в инспекторе захочешь приблизить — уменьшай Y и Z (например 18 и -15).
             cameraGO.transform.position = new Vector3(0f, 40f, -32f);
             cameraGO.transform.rotation = Quaternion.Euler(50f, 0f, 0f);
             var cam = cameraGO.GetComponent<Camera>();
@@ -70,15 +63,18 @@ namespace Project.EditorTools.Tools
             cam.allowMSAA = false;
             var screenShake = cameraGO.GetComponent<ScreenShake>();
 
-            // ---------- Свет ----------
             var lightGO = new GameObject("Directional Light", typeof(Light));
             var light = lightGO.GetComponent<Light>();
             light.type = LightType.Directional;
             light.shadows = LightShadows.None;
-            light.intensity = 1.1f;
+            light.intensity = 0.55f;
+            light.color = new Color(1f, 0.96f, 0.88f, 1f);
             lightGO.transform.rotation = Quaternion.Euler(45f, -30f, 0f);
 
-            // ---------- Level ----------
+            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
+            RenderSettings.ambientLight = new Color(0.32f, 0.30f, 0.28f, 1f);
+            RenderSettings.fog = false;
+
             var levelGO = new GameObject("Level");
             CreateBackground(levelGO.transform, cam);
             var spawnerGO = new GameObject("UnitSpawner", typeof(UnitSpawner));
@@ -87,7 +83,6 @@ namespace Project.EditorTools.Tools
             SetField(spawner, "_bank", units);
             SetField(spawner, "_root", levelGO.transform);
 
-            // ---------- BattleFlow ----------
             var flowGO = new GameObject("BattleFlow",
                 typeof(BattleFlow), typeof(TapInput), typeof(VfxService));
             var battleFlow = flowGO.GetComponent<BattleFlow>();
@@ -105,7 +100,6 @@ namespace Project.EditorTools.Tools
             var floatingRoot = new GameObject("FloatingNumbersRoot");
             floatingRoot.transform.SetParent(flowGO.transform);
 
-            // Подсовываем готовый prefab-asset; если его нет — fallback на runtime-template.
             const string floatingPrefabPath = "Assets/_Project/Art/Prefabs/FloatingNumber.prefab";
             var floatingPrefab = AssetDatabase.LoadAssetAtPath<FloatingNumber>(floatingPrefabPath);
             if (floatingPrefab == null) floatingPrefab = CreateFloatingNumberTemplate(flowGO.transform);
@@ -119,7 +113,6 @@ namespace Project.EditorTools.Tools
             SetField(battleFlow, "_floatingNumberPrefab", floatingPrefab);
             SetField(battleFlow, "_floatingNumbersRoot",  floatingRoot.transform);
 
-            // ---------- Audio ----------
             var audioGO = new GameObject("Audio", typeof(AudioService));
             var audioService = audioGO.GetComponent<AudioService>();
             var musicGO = new GameObject("Music_Source", typeof(AudioSource));
@@ -139,7 +132,6 @@ namespace Project.EditorTools.Tools
             SetField(audioService, "_music",   music);
             SetField(audioService, "_sfxPool", sfxPool);
 
-            // ---------- Integration ----------
             var integrationGO = new GameObject("Integration");
             var mraidGO = new GameObject("MraidBridge", typeof(MraidBridge));
             mraidGO.transform.SetParent(integrationGO.transform);
@@ -149,7 +141,6 @@ namespace Project.EditorTools.Tools
             var analyticsGO = new GameObject("AnalyticsService", typeof(AnalyticsService));
             analyticsGO.transform.SetParent(integrationGO.transform);
 
-            // ---------- UI ----------
             var canvasGO = new GameObject("Canvas",
                 typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             var canvas = canvasGO.GetComponent<Canvas>();
@@ -160,8 +151,6 @@ namespace Project.EditorTools.Tools
             scaler.referenceResolution = new Vector2(1080f, 1920f);
             scaler.matchWidthOrHeight = 0.5f;
 
-            // HUD теперь пустой — сила игрока показывается над его головой через PowerLabel,
-            // а подсказка «Тапни по цели» в Hero Wars-стиле не нужна.
             var hudGO = new GameObject("HUD", typeof(HudView), typeof(HudPresenter));
             hudGO.transform.SetParent(canvasGO.transform, false);
             var hudView = hudGO.GetComponent<HudView>();
@@ -202,7 +191,6 @@ namespace Project.EditorTools.Tools
                 typeof(UnityEngine.EventSystems.EventSystem),
                 typeof(UnityEngine.EventSystems.StandaloneInputModule));
 
-            // ---------- GameRoot (последним, чтобы все ссылки уже существовали) ----------
             var rootGO = new GameObject("GameRoot", typeof(GameRoot));
             var gameRoot = rootGO.GetComponent<GameRoot>();
             SetField(gameRoot, "_levelConfig",   level);
@@ -211,7 +199,6 @@ namespace Project.EditorTools.Tools
             SetField(gameRoot, "_battleFlow",    battleFlow);
             SetField(gameRoot, "_camera",        cam);
 
-            // Все сервисы, которые раньше дёргали GameRoot.Instance, теперь получают его явно.
             SetField(hudPresenter,    "_root", gameRoot);
             SetField(endCardPresenter, "_root", gameRoot);
             SetField(audioService,    "_root", gameRoot);
@@ -221,8 +208,6 @@ namespace Project.EditorTools.Tools
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene, ScenePath);
 
-            // Добавляем сцену в Build Settings и попутно вычищаем мёртвые записи (например,
-            // удалённую SampleScene из Unity-шаблона).
             var buildScenes = new List<EditorBuildSettingsScene>();
             foreach (var s in EditorBuildSettings.scenes)
                 if (File.Exists(s.path)) buildScenes.Add(s);
@@ -257,13 +242,10 @@ namespace Project.EditorTools.Tools
 
         private static LevelConfig CreateDefaultLevel(string path)
         {
-            // Если LevelConfig уже есть — НЕ перезаписываем (иначе ручные правки позиций пропадают).
             var existing = AssetDatabase.LoadAssetAtPath<LevelConfig>(path);
             if (existing != null) return existing;
 
             var level = ScriptableObject.CreateInstance<LevelConfig>();
-            // Hero Wars-стиль: статичная камера, всё поле боя в кадре. Герой слева сверху,
-            // цели разнесены по площади.
             level.Player = new LevelConfig.PlayerSpawn { Position = new Vector2(-4f, 2f), Power = 2 };
             level.Targets = new List<LevelConfig.TargetSpawn>
             {
@@ -408,7 +390,6 @@ namespace Project.EditorTools.Tools
 
         private static void CreateBackground(Transform parent, Camera cam)
         {
-            // Сначала ищем "clean" вариант фона; если нет — fallback на любой BG-текстуру под Art/.
             Texture2D bg = null;
             var guids = AssetDatabase.FindAssets("t:Texture2D BG", new[] { "Assets/_Project/Art" });
             foreach (var guid in guids)
@@ -431,30 +412,21 @@ namespace Project.EditorTools.Tools
             quad.name = "BG";
             Object.DestroyImmediate(quad.GetComponent<Collider>());
 
-            // BG крепим как child камеры — он всегда заполняет экран независимо от позиции камеры.
-            // Дистанция взята с запасом, чтобы фон гарантированно был ЗА всеми юнитами и не
-            // перекрывал их при сильно отодвинутой камере.
             const float distance = 60f;
             var attachTo = cam != null ? cam.transform : parent;
             quad.transform.SetParent(attachTo, false);
             quad.transform.localPosition = new Vector3(0f, 0f, distance);
             quad.transform.localRotation = Quaternion.identity;
 
-            // Размер квада подбираем по FOV камеры так, чтобы фон ровно вписывался в кадр на этой
-            // дистанции. Перспективная формула: visibleHeight = 2 * d * tan(FOV/2).
             var fov = cam != null ? cam.fieldOfView : 50f;
-            var aspect = 9f / 16f; // portrait playable
+            var aspect = 9f / 16f;
             var height = 2f * distance * Mathf.Tan(fov * 0.5f * Mathf.Deg2Rad);
             var width  = height * aspect;
-            // Лёгкий запас 5%, чтобы не было щелей по краям при анимациях камеры.
             quad.transform.localScale = new Vector3(width * 1.05f, height * 1.05f, 1f);
 
-            // Sprites/Default поддерживает и _MainTex, и tint через color — нужно для затемнения BG.
             var shader = Shader.Find("Sprites/Default") ?? Shader.Find("Mobile/Diffuse") ?? Shader.Find("Standard");
             var mat = new Material(shader) { name = "BG_Material" };
             if (bg != null && mat.HasProperty("_MainTex")) mat.mainTexture = bg;
-            // Слегка затемняем фон, чтобы 3D-юниты с яркими лейблами читались отчётливее.
-            // Если хочется ярче — поставь color = (1, 1, 1, 1) на Material BG.
             mat.color = bg != null ? new Color(0.6f, 0.6f, 0.65f, 1f) : new Color(0.12f, 0.18f, 0.28f, 1f);
             quad.GetComponent<MeshRenderer>().sharedMaterial = mat;
         }

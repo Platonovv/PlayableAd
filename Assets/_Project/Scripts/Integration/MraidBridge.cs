@@ -49,7 +49,6 @@ namespace Project.Integration
             Playable_OpenStore(_ctaUrl);
         }
 
-        // Имена ниже специально публичные — их вызывает JS через unityInstance.SendMessage.
         public void OnPause()
         {
             Time.timeScale = 0f;

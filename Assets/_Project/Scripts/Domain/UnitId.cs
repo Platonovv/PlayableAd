@@ -3,9 +3,6 @@ using System.Threading;
 
 namespace Project.Domain
 {
-    /// <summary>
-    /// Уникальный идентификатор юнита в рамках процесса.
-    /// </summary>
     public readonly struct UnitId : IEquatable<UnitId>
     {
         private static int _counter;

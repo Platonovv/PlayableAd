@@ -71,12 +71,11 @@ namespace Project.Gameplay.Vfx
 				elapsed += Time.deltaTime;
 				var k = Mathf.Clamp01(elapsed / duration);
 				var pos = Vector3.LerpUnclamped(from, target.position, Ease.InQuad(k));
-				pos.y += Mathf.Sin(k * Mathf.PI) * _arcHeight; // дуга вверх
+				pos.y += Mathf.Sin(k * Mathf.PI) * _arcHeight;
 				transform.position = pos;
 				await UniTask.Yield(PlayerLoopTiming.Update, ct).SuppressCancellationThrow();
 			}
 
-			// Долетели чётко, без подкрашивания/scale — дальше «эффект приёма» делает PowerLabel получателя.
 			pool.Release(this);
 		}
 	}

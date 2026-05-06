@@ -48,7 +48,7 @@ namespace Project.EditorTools.Tools
             var cameraGO = new GameObject("Main Camera",
                 typeof(Camera), typeof(AudioListener), typeof(ScreenShake));
             cameraGO.tag = "MainCamera";
-            cameraGO.transform.position = new Vector3(0f, 40f, -32f);
+            cameraGO.transform.position = new Vector3(0f, 30f, -24f);
             cameraGO.transform.rotation = Quaternion.Euler(50f, 0f, 0f);
             var cam = cameraGO.GetComponent<Camera>();
             cam.orthographic = false;
@@ -149,10 +149,25 @@ namespace Project.EditorTools.Tools
             var scaler = canvasGO.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1080f, 1920f);
-            scaler.matchWidthOrHeight = 0.5f;
+            // Match по высоте: на landscape UI не растягивается, остаётся в 9:16 SafeArea ниже.
+            scaler.matchWidthOrHeight = 1f;
+
+            // SafeArea — контейнер 9:16 по центру Canvas. Все UI-элементы дети SafeArea,
+            // так что на landscape (desktop preview) они не уезжают на чёрные полосы.
+            var safeAreaGO = new GameObject("SafeArea",
+                typeof(RectTransform), typeof(AspectRatioFitter));
+            safeAreaGO.transform.SetParent(canvasGO.transform, false);
+            var safeRect = (RectTransform)safeAreaGO.transform;
+            safeRect.anchorMin = Vector2.zero;
+            safeRect.anchorMax = Vector2.one;
+            safeRect.offsetMin = Vector2.zero;
+            safeRect.offsetMax = Vector2.zero;
+            var safeFitter = safeAreaGO.GetComponent<AspectRatioFitter>();
+            safeFitter.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
+            safeFitter.aspectRatio = 1080f / 1920f;
 
             var hudGO = new GameObject("HUD", typeof(HudView), typeof(HudPresenter));
-            hudGO.transform.SetParent(canvasGO.transform, false);
+            hudGO.transform.SetParent(safeAreaGO.transform, false);
             var hudView = hudGO.GetComponent<HudView>();
             var hudPresenter = hudGO.GetComponent<HudPresenter>();
             SetField(hudPresenter, "_view", hudView);
@@ -180,17 +195,25 @@ namespace Project.EditorTools.Tools
                 anchored: new Vector2(0f, -130f), sizeDelta: new Vector2(900f, 80f),
                 color: new Color(1f, 1f, 1f, 0.85f));
 
-            var stars = new Text[3];
-            const float starSpacing = 180f;
+            var stars = new Image[3];
+            const float starSpacing = 140f;
+            var starFilledSprite = LoadIconSprite("star_white_24dp.png");
+            var starOutlineSprite = LoadIconSprite("star_outline_white_24dp.png");
             for (int i = 0; i < 3; i++)
             {
-                var star = CreateUiText(endCardGO.transform, "Star_" + i, "☆", 130,
-                    anchor: new Vector2(0.5f, 0.7f), pivot: new Vector2(0.5f, 0.5f),
-                    anchored: new Vector2((i - 1) * starSpacing, -240f),
-                    sizeDelta: new Vector2(160f, 160f),
-                    color: new Color(1f, 1f, 1f, 0.35f));
-                star.fontStyle = FontStyle.Bold;
-                stars[i] = star;
+                var starGO = new GameObject("Star_" + i,
+                    typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                starGO.transform.SetParent(endCardGO.transform, false);
+                var sRect = (RectTransform)starGO.transform;
+                sRect.anchorMin = sRect.anchorMax = new Vector2(0.5f, 0.7f);
+                sRect.pivot = new Vector2(0.5f, 0.5f);
+                sRect.anchoredPosition = new Vector2((i - 1) * starSpacing, -240f);
+                sRect.sizeDelta = new Vector2(110f, 110f);
+                var img = starGO.GetComponent<Image>();
+                img.sprite = starOutlineSprite;
+                img.color = new Color(1f, 1f, 1f, 0.45f);
+                img.raycastTarget = false;
+                stars[i] = img;
             }
 
             var ctaButton    = CreateButton(endCardGO.transform, "CTA",   "PLAY!",        new Vector2(0f, -120f));
@@ -205,12 +228,14 @@ namespace Project.EditorTools.Tools
             SetField(endCardView, "_skipButton",  skipButton);
             SetField(endCardView, "_title",       titleText);
             SetField(endCardView, "_subtitle",    subtitleText);
-            SetField(endCardView, "_stars",       stars);
+            SetField(endCardView, "_stars",             stars);
+            SetField(endCardView, "_starFilledSprite",  starFilledSprite);
+            SetField(endCardView, "_starOutlineSprite", starOutlineSprite);
             SetField(endCardPresenter, "_view",     endCardView);
             SetField(endCardPresenter, "_winTitle", "YOU WIN!");
             SetField(endCardPresenter, "_loseTitle", "GAME OVER");
 
-            BuildMuteToggle(canvasGO.transform);
+            BuildMuteToggle(safeAreaGO.transform);
 
             var eventSystemGO = new GameObject("EventSystem",
                 typeof(UnityEngine.EventSystems.EventSystem),
@@ -230,9 +255,9 @@ namespace Project.EditorTools.Tools
             SetField(analyticsGO.GetComponent<AnalyticsService>(), "_root", gameRoot);
             SetField(mraidGO.GetComponent<MraidBridge>(),          "_root", gameRoot);
 
-            BuildTutorialNudge(canvasGO.transform, gameRoot);
-            BuildMobCounter(canvasGO.transform, gameRoot);
-            BuildTouchRipple(canvasGO, cam);
+            BuildTutorialNudge(safeAreaGO.transform, gameRoot);
+            BuildMobCounter(safeAreaGO.transform, gameRoot);
+            BuildTouchRipple(safeAreaGO, cam);
             BuildTapToStartSplash(canvasGO.transform);
 
             WireUiClickSound(ctaButton, audioService);
@@ -376,6 +401,21 @@ namespace Project.EditorTools.Tools
             return null;
         }
 
+        private static Sprite LoadIconSprite(string fileName)
+        {
+            var path = "Assets/_Project/Art/Icons/" + fileName;
+            var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (importer != null && importer.textureType != TextureImporterType.Sprite)
+            {
+                importer.textureType = TextureImporterType.Sprite;
+                importer.spriteImportMode = SpriteImportMode.Single;
+                importer.alphaIsTransparency = true;
+                importer.mipmapEnabled = false;
+                importer.SaveAndReimport();
+            }
+            return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+        }
+
         private static void BuildMobCounter(Transform canvasParent, GameRoot root)
         {
             var go = new GameObject("MobCounter",
@@ -386,7 +426,7 @@ namespace Project.EditorTools.Tools
             rect.anchorMin = new Vector2(0f, 1f);
             rect.anchorMax = new Vector2(0f, 1f);
             rect.pivot = new Vector2(0f, 1f);
-            rect.anchoredPosition = new Vector2(32f, -40f);
+            rect.anchoredPosition = new Vector2(32f, -15f);
             rect.sizeDelta = new Vector2(500f, 90f);
 
             var label = CreateUiText(go.transform, "Label", "MOBS 0/0", 56,
@@ -521,7 +561,7 @@ namespace Project.EditorTools.Tools
             rect.anchorMin = new Vector2(1f, 1f);
             rect.anchorMax = new Vector2(1f, 1f);
             rect.pivot = new Vector2(1f, 1f);
-            rect.anchoredPosition = new Vector2(-32f, -32f);
+            rect.anchoredPosition = new Vector2(-32f, -15f);
             rect.sizeDelta = new Vector2(120f, 120f);
 
             var bg = go.GetComponent<Image>();
@@ -530,23 +570,22 @@ namespace Project.EditorTools.Tools
             bg.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
 
             var iconGO = new GameObject("Icon",
-                typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
+                typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
             iconGO.transform.SetParent(go.transform, false);
             var iconRect = (RectTransform)iconGO.transform;
             iconRect.anchorMin = new Vector2(0.5f, 0.5f);
             iconRect.anchorMax = new Vector2(0.5f, 0.5f);
             iconRect.pivot = new Vector2(0.5f, 0.5f);
             iconRect.anchoredPosition = Vector2.zero;
-            iconRect.sizeDelta = new Vector2(120f, 120f);
+            iconRect.sizeDelta = new Vector2(80f, 80f);
 
-            var iconText = iconGO.GetComponent<Text>();
-            iconText.text = "♪";
-            iconText.font = LegacyFont();
-            iconText.fontSize = 80;
-            iconText.fontStyle = FontStyle.Bold;
-            iconText.alignment = TextAnchor.MiddleCenter;
-            iconText.color = Color.white;
-            iconText.raycastTarget = false;
+            var iconImage = iconGO.GetComponent<Image>();
+            iconImage.color = Color.white;
+            iconImage.raycastTarget = false;
+
+            var onSprite = LoadIconSprite("volume_up_white_24dp.png");
+            var offSprite = LoadIconSprite("volume_off_white_24dp.png");
+            iconImage.sprite = onSprite;
 
             var button = go.GetComponent<Button>();
             button.targetGraphic = bg;
@@ -560,7 +599,9 @@ namespace Project.EditorTools.Tools
 
             var toggle = go.GetComponent<MuteToggle>();
             SetField(toggle, "_button", button);
-            SetField(toggle, "_label", iconText);
+            SetField(toggle, "_icon", iconImage);
+            SetField(toggle, "_onSprite", onSprite);
+            SetField(toggle, "_offSprite", offSprite);
         }
 
         private static CanvasGroup CreateHintGroup(Transform parent)

@@ -17,11 +17,11 @@ namespace Project.UI.EndCard
         [SerializeField] private Button _skipButton;
         [SerializeField] private Text _title;
         [SerializeField] private Text _subtitle;
-        [SerializeField] private Text[] _stars;
-        [SerializeField] private string _starFilled = "★";
-        [SerializeField] private string _starEmpty = "☆";
+        [SerializeField] private Image[] _stars;
+        [SerializeField] private Sprite _starFilledSprite;
+        [SerializeField] private Sprite _starOutlineSprite;
         [SerializeField] private Color _starFilledColor = new Color(1f, 0.85f, 0.2f);
-        [SerializeField] private Color _starEmptyColor = new Color(1f, 1f, 1f, 0.35f);
+        [SerializeField] private Color _starEmptyColor = new Color(1f, 1f, 1f, 0.45f);
         [SerializeField] private float _ctaPulseAmplitude = 0.06f;
         [SerializeField] private float _ctaPulseSpeed = 4f;
 
@@ -68,7 +68,7 @@ namespace Project.UI.EndCard
                 var s = _stars[i];
                 if (s == null) continue;
                 var filled = i < filledCount;
-                s.text = filled ? _starFilled : _starEmpty;
+                s.sprite = filled ? _starFilledSprite : _starOutlineSprite;
                 s.color = filled ? _starFilledColor : _starEmptyColor;
                 s.transform.localScale = Vector3.one;
             }

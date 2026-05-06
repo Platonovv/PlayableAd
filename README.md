@@ -16,6 +16,7 @@ HTML5 playable: рыцарь выбирает цель, ориентируясь
 - [Edit-time утилиты](#edit-time-утилиты)
 - [Анимации в Unity Playworks](#анимации-в-unity-playworks)
 - [Unity Playworks SDK интеграция](#unity-playworks-sdk-интеграция)
+- [UX и polish](#ux-и-polish)
 - [Оптимизации размера](#оптимизации-размера)
 - [Что бы улучшил при наличии времени](#что-бы-улучшил-при-наличии-времени)
 - [Граф сцены](#граф-сцены)
@@ -68,8 +69,8 @@ Audio    → AudioBank (SO), AudioService (подписка на сигналы)
 Integration → MraidBridge (WebGL JSLib + Unity Playworks SDK через рефлексию + mock-фолбэк),
               AnalyticsService
 Configs   → BalanceConfig, LevelConfig, UnitsBank, VfxBank, AudioBank (все SO)
-Editor    → SceneBuilder, SequenceTexturePostprocessor, MaterialFixer,
-            MaterialAutoFill, AnimationClipRenamer, FbxSlimmer, BuildSizeAudit
+Editor    → SequenceTexturePostprocessor, MaterialFixer, MaterialAutoFill,
+            AnimationClipRenamer, FbxSlimmer, BuildSizeAudit
 ```
 
 **Ключевые паттерны:**
@@ -166,6 +167,29 @@ Editor    → SceneBuilder, SequenceTexturePostprocessor, MaterialFixer,
 
 ---
 
+## UX и polish
+
+| Фича | Где | Что делает |
+|---|---|---|
+| **Tap-to-start splash** | `TapToStartSplash` | Стартовый экран «TAP TO PLAY» поверх сцены, нужен из-за autoplay-policies браузеров (звук разрешается только после user gesture). |
+| **Mute toggle** | `MuteToggle` | Иконка mute/unmute в углу, состояние хранится в `AudioService`. |
+| **Tutorial nudge** | `TutorialNudge` | Если игрок не сделал тап за ~3 сек — показывает анимированную подсказку над ближайшей валидной целью. |
+| **Mob counter** | `MobCounter` | HUD-счётчик `MOBS X/N` — даёт игроку понимание прогресса до победы. |
+| **Score subtitle** | `EndCardView` / `EndCardPresenter` | На Win-карточке выводится итоговый счёт/субтайтл по результату боя. |
+| **Star rating** | `EndCardView` / `EndCardPresenter` | 1–3 звезды на end-card в зависимости от того, сколько ударов получил игрок. |
+| **CTA pulse** | `EndCardView` | Кнопка CTA пульсирует scale-tween'ом — привлекает внимание после завершения боя. |
+| **Skip-кнопка на Lose** | `EndCardView` | На Lose-карточке отдельная кнопка Skip → сразу триггерит install через SDK без Retry. |
+| **Touch ripple** | `TouchRipple` (pool) | Визуальный фидбек на каждый тап по экрану — кружок-волна, инстанс берётся из пула. |
+| **UI click sounds** | `UiSoundButton` + `AudioService.Play` | Все кликабельные UI-элементы озвучены через единый компонент-обёртку над `Button`. |
+
+### Сознательно не делал (не критично для тестового, есть бэклог)
+
+- **App icon на end-card** — графический ассет, не функциональность; в production-залив добавляется через Hub.
+- **Loading progress** — Unity Playworks Plugin кладёт свой inline-сплеш на время загрузки wasm, кастомный поверх него — оверхед.
+- **Локализация** — сейчас один язык, инфраструктура под i18n не разворачивалась.
+
+---
+
 ## Оптимизации размера
 
 | Источник | Что сделано |
@@ -185,12 +209,13 @@ Editor    → SceneBuilder, SequenceTexturePostprocessor, MaterialFixer,
 
 ## Что бы улучшил при наличии времени
 
-- **Локализация** под несколько языков (сейчас один).
+- **Локализация** под несколько языков (сейчас один) + автодетект из MRAID-параметров.
+- **App icon + store-badges на end-card** (Apple / Google Play) — поднимает доверие и CTR.
 - **Адаптивная вёрстка** UI под экстремальные aspect ratio (9:21+).
 - **Pre-bake hero animations в sprite atlas** — снимет ещё 200–400 KB и уберёт остаточные skinned-mesh-нюансы Unity Playworks Plugin.
 - **A/B-варианты конфигов уровня** через query-string.
 - **Расширенная аналитика**: тайминги между взаимодействиями, hit-rate первого тапа, drop-off по фазам.
-- **Туториал-нудж** (анимированная стрелка) если игрок не сделал тап за 3 секунды.
+- **Game feel**: hit-stop на критах, slow-mo на финальном мобе, доп. particle-бёрсты.
 
 ---
 
@@ -198,7 +223,7 @@ Editor    → SceneBuilder, SequenceTexturePostprocessor, MaterialFixer,
 
 ```
 [GameRoot]                         (composition root, [DefaultExecutionOrder(-1000)])
-├─ Main Camera                     (Perspective, FOV 35, position (0, 40, -32), rotation (50,0,0))
+├─ Main Camera                     (Perspective, FOV 35, position (0, 30, -24), rotation (50,0,0))
 │   ├─ ScreenShake (component, FX: shake / FOV pulse / push-offset)
 │   └─ BG (Quad child, перпендикуляр камеры, текстура BG_plb_clean.jpg)
 ├─ Directional Light               (Intensity 0.55, тёплый dim, без теней)

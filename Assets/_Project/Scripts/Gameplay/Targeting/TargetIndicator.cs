@@ -32,8 +32,6 @@ namespace Project.Gameplay.Targeting
 
 		private void ConfigureLine()
 		{
-			// В Playworks Shader.Find часто возвращает null — берём inspector-материал LineRenderer'а
-			// (он уже сериализован с правильным шейдером Sprites/Default), клонируем как instance.
 			Material baseMat = _line.sharedMaterial;
 			if (baseMat != null)
 			{

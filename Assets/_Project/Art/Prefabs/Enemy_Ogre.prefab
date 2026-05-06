@@ -11,7 +11,7 @@ PrefabInstance:
     - target: {fileID: 618541870512516428, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
       propertyPath: _text
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 2647996950190314982}
     - target: {fileID: 2570098097646946325, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -81,6 +81,7 @@ PrefabInstance:
     - {fileID: 4631867971556857632, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
     m_RemovedGameObjects:
     - {fileID: 8446918749446090829, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
+    - {fileID: 2570098097646946325, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 8670321803848033133, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
       insertIndex: 0
@@ -93,11 +94,6 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 2647996950190314982}
   m_SourcePrefab: {fileID: 100100000, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
---- !u!95 &1826803765533654803 stripped
-Animator:
-  m_CorrespondingSourceObject: {fileID: 4075683898525711425, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
-  m_PrefabInstance: {fileID: 2438031459162637138}
-  m_PrefabAsset: {fileID: 0}
 --- !u!114 &2972411197007556126 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 618541870512516428, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
@@ -146,11 +142,25 @@ MonoBehaviour:
   AnchorPoint: {fileID: 6494256714696070305}
   VfxPoint: {fileID: 0}
   HighlightRing: {fileID: 9115405153588886354}
-  AnimatorRef: {fileID: 0}
   WarningRing: {fileID: 3944477964418062230}
+  LegacyAnim: {fileID: 8830068028448613876}
+  LegacyClipMap:
+  - StateName: Idle
+    Clip: {fileID: -7200027339799556265, guid: ed248284bab6cc848a9766e76bf687b2, type: 3}
+    Loop: 1
+  - StateName: Attack
+    Clip: {fileID: 3072012625739326937, guid: ed248284bab6cc848a9766e76bf687b2, type: 3}
+    Loop: 0
+  - StateName: Death
+    Clip: {fileID: 1119267722347195599, guid: ed248284bab6cc848a9766e76bf687b2, type: 3}
+    Loop: 0
+  - StateName: Hit
+    Clip: {fileID: 4439583039827462878, guid: ed248284bab6cc848a9766e76bf687b2, type: 3}
+    Loop: 0
   _previewScale: 1.15
   _previewDuration: 0.12
-  _animator: {fileID: 1826803765533654803}
+  _ringPulseAmplitude: 0.08
+  _ringPulseSpeed: 5
 --- !u!1 &9035403854493494676 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 6679281758595870406, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
@@ -247,6 +257,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: FB_Ogre2
       objectReference: {fileID: 0}
+    - target: {fileID: 2223639932434330405, guid: ed248284bab6cc848a9766e76bf687b2, type: 3}
+      propertyPath: m_CullingType
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2223639932434330405, guid: ed248284bab6cc848a9766e76bf687b2, type: 3}
+      propertyPath: m_PlayAutomatically
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -255,5 +273,10 @@ PrefabInstance:
 --- !u!4 &7195619532903608634 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: ed248284bab6cc848a9766e76bf687b2, type: 3}
+  m_PrefabInstance: {fileID: 7228629976519120593}
+  m_PrefabAsset: {fileID: 0}
+--- !u!111 &8830068028448613876 stripped
+Animation:
+  m_CorrespondingSourceObject: {fileID: 2223639932434330405, guid: ed248284bab6cc848a9766e76bf687b2, type: 3}
   m_PrefabInstance: {fileID: 7228629976519120593}
   m_PrefabAsset: {fileID: 0}

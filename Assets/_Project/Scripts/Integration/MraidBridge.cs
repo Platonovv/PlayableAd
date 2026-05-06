@@ -6,8 +6,8 @@ using UnityEngine;
 namespace Project.Integration
 {
     /// <summary>
-    /// Мост MRAID/браузер: JS-вызовы на WebGL, mock в редакторе; pause/resume + click-through.
-    /// CTA-клик и конец игры идут через Luna SDK API (требование рекламных сетей).
+    /// Мост MRAID/браузер и Luna SDK: pause/resume, mute/unmute, click-through через
+    /// Luna InstallFullGame и LifeCycle.GameEnded по сигналам из gameplay.
     /// </summary>
     [DefaultExecutionOrder(-100)]
     public sealed class MraidBridge : MonoBehaviour
@@ -55,8 +55,6 @@ namespace Project.Integration
         private void OnCta(CtaClickedSignal _)
         {
             Playable_LogEvent("{\"event\":\"cta_click\"}");
-            // Luna API: открытие стора через SDK — обязательное требование рекламных сетей.
-            // В редакторе fallback на свой OpenStore (mock).
             if (!TryLunaInstallFullGame())
                 Playable_OpenStore(_ctaUrl);
         }
@@ -65,7 +63,6 @@ namespace Project.Integration
         {
             if (_gameEndedReported) return;
             _gameEndedReported = true;
-            // Luna API: уведомление о конце плейбла. Без него сети не показывают свой нативный end-card.
             TryLunaGameEnded();
         }
 
@@ -76,8 +73,7 @@ namespace Project.Integration
             var m = t?.GetMethod("InstallFullGame",
                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
             if (m == null) return false;
-            try { m.Invoke(null, null); return true; }
-            catch (System.Exception e) { Debug.LogWarning("Luna InstallFullGame failed: " + e.Message); return false; }
+            try { m.Invoke(null, null); return true; } catch { return false; }
         }
 
         private static bool TryLunaGameEnded()
@@ -87,8 +83,7 @@ namespace Project.Integration
             var m = t?.GetMethod("GameEnded",
                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
             if (m == null) return false;
-            try { m.Invoke(null, null); return true; }
-            catch (System.Exception e) { Debug.LogWarning("Luna GameEnded failed: " + e.Message); return false; }
+            try { m.Invoke(null, null); return true; } catch { return false; }
         }
 
         public void OnPause()

@@ -22,6 +22,11 @@ namespace Project.Gameplay.Units
 		{
 			_camera = cameraMain;
 
+			if (_text == null)
+				_text = GetComponentInChildren<Text>(includeInactive: true);
+			if (_background == null)
+				_background = GetComponentInChildren<Image>(includeInactive: true);
+
 			Color color;
 			switch (kind)
 			{

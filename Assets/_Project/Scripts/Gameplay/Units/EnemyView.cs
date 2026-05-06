@@ -10,27 +10,13 @@ namespace Project.Gameplay.Units
 	/// </summary>
 	public sealed class EnemyView : UnitView
 	{
-		[SerializeField] private Animator _animator;
-
 		private BalanceConfig _balance;
 
 		public void Configure(BalanceConfig balance) => _balance = balance;
 
-		protected override void Awake()
-		{
-			base.Awake();
-			if (_animator != null)
-			{
-				// Luna Playworks ругается на cullingMode setter — оставляем дефолт (AlwaysAnimate
-				// нужен только если объект уезжает за границы фрустума; у нас все юниты в кадре).
-				_animator.applyRootMotion = false;
-			}
-		}
-
 		public IEnumerator PlayDeath()
 		{
 			Cross("Death");
-			// Дефолты на случай отсутствия Configure (Luna строит билд иначе чем Editor — параноим).
 			var deathDuration = _balance != null ? _balance.DeathAnimDuration : 0.4f;
 			var fadeDuration = _balance != null ? _balance.DeathFadeDuration : 0.2f;
 			yield return new WaitForSeconds(deathDuration);

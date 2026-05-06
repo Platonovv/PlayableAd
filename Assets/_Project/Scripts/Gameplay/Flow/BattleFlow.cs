@@ -24,7 +24,7 @@ namespace Project.Gameplay.Flow
 		[SerializeField] private FloatingNumber _floatingNumberPrefab;
 		[SerializeField] private Transform _floatingNumbersRoot;
 		[SerializeField] private Color _enemyArrowColor = new Color(0.95f, 0.25f, 0.25f, 1f);
-		[SerializeField] private Color _winnableArrowColor = new Color(0.25f, 0.55f, 1f,    1f);
+		[SerializeField] private Color _winnableArrowColor = new Color(0.25f, 0.55f, 1f, 1f);
 		[SerializeField] private Color _chestArrowColor = new Color(0.30f, 0.85f, 0.35f, 1f);
 
 		private BattleFlowContext _ctx;
@@ -64,9 +64,9 @@ namespace Project.Gameplay.Flow
 				Vfx = _vfx,
 				Shake = _shake,
 				Numbers = pool,
-				EnemyArrowColor    = _enemyArrowColor,
+				EnemyArrowColor = _enemyArrowColor,
 				WinnableArrowColor = _winnableArrowColor,
-				ChestArrowColor    = _chestArrowColor
+				ChestArrowColor = _chestArrowColor
 			};
 
 			_fsm = new StateMachine<BattleFlowContext>(_ctx);
@@ -86,35 +86,35 @@ namespace Project.Gameplay.Flow
 
 		private void OnDestroy()
 		{
-			if (_ctx?.Signals == null) return;
+			if (_ctx?.Signals == null)
+				return;
+
 			_ctx.Signals.Unsubscribe<TargetSelectedSignal>(OnTargetSelected);
 			_ctx.Signals.Unsubscribe<TargetPreviewSignal>(OnTargetPreview);
 		}
 
 		private void OnTargetPreview(TargetPreviewSignal signal)
 		{
-			if (_fsm.Current != _idle) return;
+			if (_fsm.Current != _idle)
+				return;
 
-			if (!signal.HasTarget)
+			if (!signal.HasTarget || !_ctx.Views.TryGetValue(signal.TargetId, out var view) || !view.Unit.IsAlive)
 			{
 				EndPreview();
 				return;
 			}
 
-			if (!_ctx.Views.TryGetValue(signal.TargetId, out var view) || !view.Unit.IsAlive)
-			{
-				EndPreview();
+			if (view.Kind == UnitKind.Player)
 				return;
-			}
-			if (view.Kind == Project.Domain.UnitKind.Player) return;
 
-			if (_previewing == view) return;
+			if (_previewing == view)
+				return;
 
-			if (_previewing != null) _previewing.SetPreview(false);
+			if (_previewing != null)
+				_previewing.SetPreview(false);
 			_previewing = view;
 
-			var isWarning = view.Kind == Project.Domain.UnitKind.Enemy
-			                && _ctx.Battle.Player.Power < view.Unit.Power;
+			var isWarning = view.Kind == UnitKind.Enemy && _ctx.Battle.Player.Power < view.Unit.Power;
 			_previewing.SetPreview(true, isWarning);
 
 			_highlighted = view;
@@ -123,7 +123,8 @@ namespace Project.Gameplay.Flow
 
 		private void EndPreview()
 		{
-			if (_previewing != null) _previewing.SetPreview(false);
+			if (_previewing != null)
+				_previewing.SetPreview(false);
 			_previewing = null;
 			ClearHighlight();
 			_ctx.Indicator.Hide();
@@ -139,7 +140,8 @@ namespace Project.Gameplay.Flow
 			if (view.Kind == Project.Domain.UnitKind.Player)
 				return;
 
-			if (_previewing != null) _previewing.SetPreview(false);
+			if (_previewing != null)
+				_previewing.SetPreview(false);
 			_previewing = null;
 			Highlight(view);
 			_ctx.PendingTarget = signal.TargetId;

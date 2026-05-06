@@ -142,7 +142,6 @@ namespace Project.EditorTools.Tools
             var canvasGO = new GameObject("Canvas",
                 typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             var canvas = canvasGO.GetComponent<Canvas>();
-            // Screen Space - Camera: Playworks плохо рендерит Screen Space Overlay (release notes 7.0-7.2).
             canvas.renderMode = RenderMode.ScreenSpaceCamera;
             canvas.worldCamera = cam;
             canvas.planeDistance = 1f;
@@ -176,18 +175,42 @@ namespace Project.EditorTools.Tools
                 anchor: new Vector2(0.5f, 0.7f), pivot: new Vector2(0.5f, 0.5f),
                 anchored: Vector2.zero, sizeDelta: new Vector2(900f, 200f), color: Color.white);
 
-            var ctaButton    = CreateButton(endCardGO.transform, "CTA",   "PLAY!",   new Vector2(0f, -120f));
-            var retryButton  = CreateButton(endCardGO.transform, "Retry", "RETRY",   new Vector2(0f, -320f), small: true);
+            var subtitleText = CreateUiText(endCardGO.transform, "Subtitle", "DEFEATED 0 · POWER 0", 50,
+                anchor: new Vector2(0.5f, 0.7f), pivot: new Vector2(0.5f, 0.5f),
+                anchored: new Vector2(0f, -130f), sizeDelta: new Vector2(900f, 80f),
+                color: new Color(1f, 1f, 1f, 0.85f));
+
+            var stars = new Text[3];
+            const float starSpacing = 180f;
+            for (int i = 0; i < 3; i++)
+            {
+                var star = CreateUiText(endCardGO.transform, "Star_" + i, "☆", 130,
+                    anchor: new Vector2(0.5f, 0.7f), pivot: new Vector2(0.5f, 0.5f),
+                    anchored: new Vector2((i - 1) * starSpacing, -240f),
+                    sizeDelta: new Vector2(160f, 160f),
+                    color: new Color(1f, 1f, 1f, 0.35f));
+                star.fontStyle = FontStyle.Bold;
+                stars[i] = star;
+            }
+
+            var ctaButton    = CreateButton(endCardGO.transform, "CTA",   "PLAY!",        new Vector2(0f, -120f));
+            var retryButton  = CreateButton(endCardGO.transform, "Retry", "RETRY",        new Vector2(0f, -320f), small: true);
+            var skipButton   = CreateButton(endCardGO.transform, "Skip",  "GET THE GAME", new Vector2(0f, -120f));
 
             var endCardView      = endCardGO.GetComponent<EndCardView>();
             var endCardPresenter = endCardGO.GetComponent<EndCardPresenter>();
             SetField(endCardView, "_group",       endCardGroup);
             SetField(endCardView, "_ctaButton",   ctaButton);
             SetField(endCardView, "_retryButton", retryButton);
+            SetField(endCardView, "_skipButton",  skipButton);
             SetField(endCardView, "_title",       titleText);
+            SetField(endCardView, "_subtitle",    subtitleText);
+            SetField(endCardView, "_stars",       stars);
             SetField(endCardPresenter, "_view",     endCardView);
             SetField(endCardPresenter, "_winTitle", "YOU WIN!");
             SetField(endCardPresenter, "_loseTitle", "GAME OVER");
+
+            BuildMuteToggle(canvasGO.transform);
 
             var eventSystemGO = new GameObject("EventSystem",
                 typeof(UnityEngine.EventSystems.EventSystem),
@@ -207,8 +230,15 @@ namespace Project.EditorTools.Tools
             SetField(analyticsGO.GetComponent<AnalyticsService>(), "_root", gameRoot);
             SetField(mraidGO.GetComponent<MraidBridge>(),          "_root", gameRoot);
 
-            // Luna стрипает SHADOWCASTER variant у Mobile/Diffuse → нет теней в playable вообще,
-            // отключаем у всех рендереров на сцене, чтобы не запрашивался отсутствующий pass.
+            BuildTutorialNudge(canvasGO.transform, gameRoot);
+            BuildMobCounter(canvasGO.transform, gameRoot);
+            BuildTouchRipple(canvasGO, cam);
+            BuildTapToStartSplash(canvasGO.transform);
+
+            WireUiClickSound(ctaButton, audioService);
+            WireUiClickSound(retryButton, audioService);
+            WireUiClickSound(skipButton, audioService);
+
             DisableShadowsInScene(scene);
 
             EditorSceneManager.MarkSceneDirty(scene);
@@ -346,6 +376,193 @@ namespace Project.EditorTools.Tools
             return null;
         }
 
+        private static void BuildMobCounter(Transform canvasParent, GameRoot root)
+        {
+            var go = new GameObject("MobCounter",
+                typeof(RectTransform), typeof(CanvasGroup), typeof(MobCounter));
+            go.transform.SetParent(canvasParent, false);
+
+            var rect = (RectTransform)go.transform;
+            rect.anchorMin = new Vector2(0f, 1f);
+            rect.anchorMax = new Vector2(0f, 1f);
+            rect.pivot = new Vector2(0f, 1f);
+            rect.anchoredPosition = new Vector2(32f, -40f);
+            rect.sizeDelta = new Vector2(500f, 90f);
+
+            var label = CreateUiText(go.transform, "Label", "MOBS 0/0", 56,
+                new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(20f, 0f),
+                new Vector2(500f, 90f), color: Color.white);
+            label.fontStyle = FontStyle.Bold;
+            label.alignment = TextAnchor.MiddleLeft;
+
+            var group = go.GetComponent<CanvasGroup>();
+            group.alpha = 1f;
+            group.blocksRaycasts = false;
+            group.interactable = false;
+
+            var counter = go.GetComponent<MobCounter>();
+            SetField(counter, "_root", root);
+            SetField(counter, "_label", label);
+            SetField(counter, "_group", group);
+        }
+
+        private static void BuildTouchRipple(GameObject canvasGO, Camera cam)
+        {
+            const int poolSize = 8;
+            var go = new GameObject("TouchRipple",
+                typeof(RectTransform), typeof(TouchRipple));
+            go.transform.SetParent(canvasGO.transform, false);
+            var rect = (RectTransform)go.transform;
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+
+            var sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
+            var rects = new RectTransform[poolSize];
+            var images = new Image[poolSize];
+            for (int i = 0; i < poolSize; i++)
+            {
+                var item = new GameObject("Ripple_" + i,
+                    typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                item.transform.SetParent(go.transform, false);
+                var r = (RectTransform)item.transform;
+                r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
+                r.pivot = new Vector2(0.5f, 0.5f);
+                r.sizeDelta = new Vector2(220f, 220f);
+                var img = item.GetComponent<Image>();
+                img.sprite = sprite;
+                img.raycastTarget = false;
+                item.SetActive(false);
+                rects[i] = r;
+                images[i] = img;
+            }
+
+            var ripple = go.GetComponent<TouchRipple>();
+            SetField(ripple, "_canvasRect", (RectTransform)canvasGO.transform);
+            SetField(ripple, "_camera", cam);
+            SetField(ripple, "_poolRects", rects);
+            SetField(ripple, "_poolImages", images);
+        }
+
+        private static void BuildTutorialNudge(Transform canvasParent, GameRoot root)
+        {
+            var go = new GameObject("TutorialNudge",
+                typeof(RectTransform), typeof(CanvasGroup), typeof(TutorialNudge));
+            go.transform.SetParent(canvasParent, false);
+
+            var rect = (RectTransform)go.transform;
+            rect.anchorMin = new Vector2(0.5f, 0.5f);
+            rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = new Vector2(0f, 200f);
+            rect.sizeDelta = new Vector2(900f, 350f);
+
+            var hintText = CreateUiText(go.transform, "Hint", "TAP THE ENEMY", 80,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero,
+                new Vector2(900f, 200f), color: Color.white);
+            hintText.fontStyle = FontStyle.Bold;
+
+            var group = go.GetComponent<CanvasGroup>();
+            group.alpha = 0f;
+            group.blocksRaycasts = false;
+            group.interactable = false;
+
+            var nudge = go.GetComponent<TutorialNudge>();
+            SetField(nudge, "_root", root);
+            SetField(nudge, "_group", group);
+        }
+
+        private static void BuildTapToStartSplash(Transform canvasParent)
+        {
+            var go = new GameObject("TapToStartSplash",
+                typeof(RectTransform), typeof(CanvasRenderer), typeof(Image),
+                typeof(CanvasGroup), typeof(Button), typeof(TapToStartSplash));
+            go.transform.SetParent(canvasParent, false);
+            go.transform.SetAsLastSibling();
+
+            var rect = (RectTransform)go.transform;
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+
+            var image = go.GetComponent<Image>();
+            image.color = new Color(0f, 0f, 0f, 0.85f);
+            image.raycastTarget = true;
+
+            var group = go.GetComponent<CanvasGroup>();
+            group.alpha = 1f;
+            group.blocksRaycasts = true;
+
+            var button = go.GetComponent<Button>();
+            button.targetGraphic = image;
+            button.transition = Selectable.Transition.None;
+
+            var ctaText = CreateUiText(go.transform, "CTA Pulse", "TAP TO PLAY", 110,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero,
+                new Vector2(900f, 220f), color: Color.white);
+            var ctaRect = ctaText.rectTransform;
+
+            var splash = go.GetComponent<TapToStartSplash>();
+            SetField(splash, "_group", group);
+            SetField(splash, "_tapButton", button);
+            SetField(splash, "_ctaPulse", ctaRect);
+        }
+
+        private static void BuildMuteToggle(Transform canvasParent)
+        {
+            var go = new GameObject("MuteToggle",
+                typeof(RectTransform), typeof(CanvasRenderer), typeof(Image),
+                typeof(Button), typeof(MuteToggle));
+            go.transform.SetParent(canvasParent, false);
+
+            var rect = (RectTransform)go.transform;
+            rect.anchorMin = new Vector2(1f, 1f);
+            rect.anchorMax = new Vector2(1f, 1f);
+            rect.pivot = new Vector2(1f, 1f);
+            rect.anchoredPosition = new Vector2(-32f, -32f);
+            rect.sizeDelta = new Vector2(120f, 120f);
+
+            var bg = go.GetComponent<Image>();
+            bg.color = new Color(0f, 0f, 0f, 0.45f);
+            bg.raycastTarget = true;
+            bg.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
+
+            var iconGO = new GameObject("Icon",
+                typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
+            iconGO.transform.SetParent(go.transform, false);
+            var iconRect = (RectTransform)iconGO.transform;
+            iconRect.anchorMin = new Vector2(0.5f, 0.5f);
+            iconRect.anchorMax = new Vector2(0.5f, 0.5f);
+            iconRect.pivot = new Vector2(0.5f, 0.5f);
+            iconRect.anchoredPosition = Vector2.zero;
+            iconRect.sizeDelta = new Vector2(120f, 120f);
+
+            var iconText = iconGO.GetComponent<Text>();
+            iconText.text = "♪";
+            iconText.font = LegacyFont();
+            iconText.fontSize = 80;
+            iconText.fontStyle = FontStyle.Bold;
+            iconText.alignment = TextAnchor.MiddleCenter;
+            iconText.color = Color.white;
+            iconText.raycastTarget = false;
+
+            var button = go.GetComponent<Button>();
+            button.targetGraphic = bg;
+            button.transition = Selectable.Transition.ColorTint;
+            var colors = button.colors;
+            colors.normalColor = Color.white;
+            colors.highlightedColor = new Color(1f, 1f, 1f, 0.85f);
+            colors.pressedColor = new Color(0.7f, 0.7f, 0.7f);
+            colors.selectedColor = Color.white;
+            button.colors = colors;
+
+            var toggle = go.GetComponent<MuteToggle>();
+            SetField(toggle, "_button", button);
+            SetField(toggle, "_label", iconText);
+        }
+
         private static CanvasGroup CreateHintGroup(Transform parent)
         {
             var go = new GameObject("Hint", typeof(RectTransform), typeof(CanvasGroup));
@@ -362,6 +579,15 @@ namespace Project.EditorTools.Tools
             return go.GetComponent<CanvasGroup>();
         }
 
+        private static void WireUiClickSound(Button button, AudioService audio)
+        {
+            if (button == null) return;
+            var sound = button.gameObject.AddComponent<UiSoundButton>();
+            SetField(sound, "_audio", audio);
+            SetField(sound, "_button", button);
+            SetField(sound, "_key", "click");
+        }
+
         private static Button CreateButton(Transform parent, string name, string label, Vector2 anchored, bool small = false)
         {
             var go = new GameObject(name,
@@ -375,7 +601,7 @@ namespace Project.EditorTools.Tools
             go.GetComponent<Image>().color = small
                 ? new Color(0.3f, 0.3f, 0.3f, 0.9f)
                 : new Color(0.95f, 0.65f, 0.15f, 1f);
-            var labelTmp = CreateUiText(go.transform, "Label", label, small ? 50f : 72f,
+            var labelTmp = CreateUiText(go.transform, "Label", label, small ? 50f : 60f,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero,
                 small ? new Vector2(360f, 110f) : new Vector2(520f, 160f), Color.white);
             return go.GetComponent<Button>();

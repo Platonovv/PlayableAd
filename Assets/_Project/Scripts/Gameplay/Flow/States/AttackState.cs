@@ -54,6 +54,16 @@ namespace Project.Gameplay.Flow.States
 				ctx.Vfx.Play(useSuper ? "super_hit" : "hit", enemy.Vfx.position);
 				ctx.Signals.Fire(new AttackResolvedSignal(ctx.Battle.Player.Id, enemy.Id));
 
+				if (useSuper)
+					ctx.Shake.FovPulse(-2f, 0.18f);
+
+				yield return _flow.StartCoroutine(HitStop(0.06f));
+
+				var pushDir = (enemy.Vfx.position - ctx.Player.Vfx.position);
+				pushDir.y = 0f;
+				if (pushDir.sqrMagnitude > 0.0001f)
+					ctx.Shake.Push(pushDir.normalized * 0.6f, 0.35f);
+
 				if (ctx.Numbers != null)
 				{
 					var number = ctx.Numbers.Rent();
@@ -88,48 +98,51 @@ namespace Project.Gameplay.Flow.States
 			}
 			else
 			{
-				UnityEngine.Debug.Log("[flow] Attack: lose branch start");
 				ctx.Signals.Fire(new AttackFailedSignal(ctx.Battle.Player.Id, enemy.Id));
 
-				UnityEngine.Debug.Log("[flow] Attack: enemy.PlayAttack");
 				yield return enemy.PlayAttack();
-				UnityEngine.Debug.Log("[flow] Attack: enemy.PlayAttack done");
 
 				ctx.Player.PlayHurt();
 				ctx.Vfx.Play("block", ctx.Player.Vfx.position);
 				ctx.Shake.Shake(ctx.Balance.HitShakeAmplitude, ctx.Balance.HitShakeDuration);
 
 				yield return new WaitForSeconds(ctx.Balance.HitReactionDelay);
-				UnityEngine.Debug.Log("[flow] Attack: starting Player.PlayDeath");
-				// Watchdog: PlayDeath с таймаутом, чтобы flow не залип на Tween/анимации в Playworks.
 				const float maxDeathTime = 1.5f;
-				var deathCo = _flow.StartCoroutine(ctx.Player.PlayDeath());
+				_flow.StartCoroutine(ctx.Player.PlayDeath());
 				var elapsed = 0f;
-				while (deathCo != null && elapsed < maxDeathTime)
+				while (elapsed < maxDeathTime)
 				{
 					elapsed += Time.deltaTime;
 					yield return null;
 					if (ctx.Player == null) break;
 				}
-				UnityEngine.Debug.Log($"[flow] Attack: PlayDeath done elapsed={elapsed:F2}");
 				_co = null;
-				UnityEngine.Debug.Log("[flow] Attack: calling GoLost");
 				_flow.GoLost();
 			}
 		}
 
-		// Watchdog: если PlayDeath по какой-то причине зависнет в Playworks
-		// (Tween на отключённом transform, NRE и т.п.), state всё равно завершится.
+		private IEnumerator HitStop(float duration)
+		{
+			var prev = Time.timeScale;
+			Time.timeScale = 0.05f;
+			var t = 0f;
+			while (t < duration)
+			{
+				t += Time.unscaledDeltaTime;
+				yield return null;
+			}
+			Time.timeScale = prev;
+		}
+
 		private IEnumerator SafePlayDeath(EnemyView enemy)
 		{
 			const float maxDeathTime = 1.5f;
-			var inner = _flow.StartCoroutine(enemy.PlayDeath());
+			_flow.StartCoroutine(enemy.PlayDeath());
 			var elapsed = 0f;
-			while (inner != null && elapsed < maxDeathTime)
+			while (elapsed < maxDeathTime)
 			{
 				elapsed += Time.deltaTime;
 				yield return null;
-				// PlayDeath сам себя завершит и сделает SetActive(false). Если объект отключился — выходим.
 				if (enemy == null || !enemy.gameObject.activeInHierarchy) yield break;
 			}
 			if (enemy != null) enemy.gameObject.SetActive(false);

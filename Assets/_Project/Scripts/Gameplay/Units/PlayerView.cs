@@ -19,7 +19,6 @@ namespace Project.Gameplay.Units
 		private const string UpgradeHash = "Upgrade";
 		private const string SuperAttackHash = "SuperAttack";
 
-		[SerializeField] private Animator _animator;
 		[SerializeField] private Transform _sword;
 
 		private BalanceConfig _balance;
@@ -28,6 +27,7 @@ namespace Project.Gameplay.Units
 		private Vector3 _swordOriginalLocalPos;
 		private Quaternion _swordOriginalLocalRot;
 		private Vector3 _swordOriginalLocalScale;
+		private bool _swordRevealed;
 
 		private Vector3 _flairBaseScale = Vector3.one;
 		private float _flairBaseY;
@@ -35,10 +35,9 @@ namespace Project.Gameplay.Units
 
 		public Transform Sword => _sword;
 
-		public Vector3 SwordTarget =>
-			_swordOriginalParent != null
-				? _swordOriginalParent.TransformPoint(_swordOriginalLocalPos)
-				: _sword != null ? _sword.position : Anchor.position;
+		public Vector3 SwordTarget
+			=> _swordOriginalParent != null ? _swordOriginalParent.TransformPoint(_swordOriginalLocalPos) :
+			   _sword != null               ? _sword.position : Anchor.position;
 
 		public void Configure(BalanceConfig balance) => _balance = balance;
 
@@ -51,38 +50,34 @@ namespace Project.Gameplay.Units
 				_swordOriginalLocalPos = _sword.localPosition;
 				_swordOriginalLocalRot = _sword.localRotation;
 				_swordOriginalLocalScale = _sword.localScale.sqrMagnitude > 0.0001f ? _sword.localScale : Vector3.one;
+
 				_sword.localScale = Vector3.zero;
-			}
-			if (_animator != null)
-			{
-				_animator.applyRootMotion = false;
-				// cullingMode не трогаем — Luna Playworks ругается на этот setter.
 			}
 
 			_flairBaseScale = transform.localScale;
+		}
+
+		private void LateUpdate()
+		{
+			if (_swordRevealed || _sword == null)
+				return;
+
+			_sword.localScale = Vector3.zero;
+		}
+
+		public void RevealSword()
+		{
+			if (_sword == null)
+				return;
+
+			_swordRevealed = true;
+			_sword.localScale = _swordOriginalLocalScale;
 		}
 
 		public override void Bind(Project.Domain.Unit unit, Camera camera)
 		{
 			base.Bind(unit, camera);
 			_flairBaseY = transform.position.y;
-		}
-
-		public void DetachSwordTo(Vector3 worldPos)
-		{
-			if (_sword == null) return;
-			_sword.SetParent(null, false);
-			_sword.position = worldPos;
-			_sword.localScale = _swordOriginalLocalScale;
-		}
-
-		public void ReattachSword()
-		{
-			if (_sword == null || _swordOriginalParent == null) return;
-			_sword.SetParent(_swordOriginalParent, false);
-			_sword.localPosition = _swordOriginalLocalPos;
-			_sword.localRotation = _swordOriginalLocalRot;
-			_sword.localScale = _swordOriginalLocalScale;
 		}
 
 		public IEnumerator MoveTo(Vector3 destination)
@@ -118,6 +113,7 @@ namespace Project.Gameplay.Units
 		public IEnumerator PlayRecover()
 		{
 			yield return new WaitForSeconds(_balance.AttackRecover);
+
 			PlayState(IdleHash);
 		}
 
@@ -125,15 +121,13 @@ namespace Project.Gameplay.Units
 		{
 			PlayState(HitHash);
 			yield return Tween.Move(transform, origin, _balance.FailedAttackBounce, Ease.OutBack);
+
 			PlayState(IdleHash);
 		}
 
 		public IEnumerator PlayUpgrade()
 		{
 			PlayState(UpgradeHash);
-			if (_sword != null)
-				_sword.localScale = Vector3.one;
-
 			StartFlair(_balance.UpgradeDuration);
 			yield return new WaitForSeconds(_balance.UpgradeDuration);
 			yield return new WaitForSeconds(_balance.UpgradeAnimTail);
@@ -168,21 +162,30 @@ namespace Project.Gameplay.Units
 
 		private void StartFlair(float duration)
 		{
-			if (_flairCo != null) StopCoroutine(_flairCo);
+			if (_flairCo != null)
+				StopCoroutine(_flairCo);
 			_flairCo = StartCoroutine(RunFlair(duration));
 		}
 
 		private IEnumerator RunFlair(float duration)
 		{
 			IEnumerator flair;
-			switch (Random.Range(0, 5))
+			switch (Random.Range(0, 4))
 			{
-				case 0: flair = PunchFlair(duration); break;
-				case 1: flair = HopUp(duration); break;
-				case 2: flair = Squash(duration); break;
-				case 3: flair = DoubleHop(duration); break;
-				default: flair = SpeedBurst(duration); break;
+				case 0:
+					flair = PunchFlair(duration);
+					break;
+				case 1:
+					flair = HopUp(duration);
+					break;
+				case 2:
+					flair = Squash(duration);
+					break;
+				default:
+					flair = DoubleHop(duration);
+					break;
 			}
+
 			yield return flair;
 
 			if (this != null)
@@ -192,6 +195,7 @@ namespace Project.Gameplay.Units
 				p.y = _flairBaseY;
 				transform.position = p;
 			}
+
 			_flairCo = null;
 		}
 
@@ -208,23 +212,6 @@ namespace Project.Gameplay.Units
 				transform.localScale = _flairBaseScale * (1f + bump);
 				yield return null;
 			}
-		}
-
-		private IEnumerator SpeedBurst(float duration)
-		{
-			if (_animator == null) yield break;
-			var prev = _animator.speed;
-			_animator.speed = 1.6f;
-
-			var elapsed = 0f;
-			while (elapsed < duration && this != null)
-			{
-				elapsed += Time.deltaTime;
-				yield return null;
-			}
-
-			if (this != null && _animator != null)
-				_animator.speed = prev;
 		}
 
 		private IEnumerator HopUp(float duration)

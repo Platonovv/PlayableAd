@@ -65,7 +65,9 @@ namespace Project.Audio
 			}
 		}
 
-		private void Play(string key)
+		public void Play(string key) => PlayKey(key);
+
+		private void PlayKey(string key)
 		{
 			if (_muted || _bank == null || _sfxPool == null || _sfxPool.Length == 0)
 				return;

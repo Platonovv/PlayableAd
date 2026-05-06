@@ -55,17 +55,14 @@ namespace Project.Gameplay.Flow.States
                     ctx.Balance.FloatingNumberDuration, ctx.Numbers);
             }
 
+            ctx.Player.PlayIdle();
+            yield return chest.PlayPreOpen();
+
             ctx.Vfx.Play("chest_open", chest.Vfx.position);
-
-            ctx.Player.PlayVictory();
-
-            // Открытие сундука + полёт меча идут параллельно
-            _swordCo = _flow.StartCoroutine(FlySwordFromChest(chest.Vfx.position, ctx.Player));
+            _swordCo = _flow.StartCoroutine(FlySwordFromChest(chest, ctx.Player));
             _landedCo = _flow.StartCoroutine(NumberLanded(ctx));
 
-            // Ждём открытие сундука
             yield return chest.PlayOpen();
-            // Ждём завершение полёта меча
             while (_swordCo != null) yield return null;
 
             ctx.Vfx.Play("upgrade", ctx.Player.Vfx.position);
@@ -87,11 +84,12 @@ namespace Project.Gameplay.Flow.States
             _landedCo = null;
         }
 
-        private IEnumerator FlySwordFromChest(Vector3 from, PlayerView player)
+        private IEnumerator FlySwordFromChest(ChestView chest, PlayerView player)
         {
-            var sword = player.Sword;
-            if (sword == null) { _swordCo = null; yield break; }
+            var sword = chest.FlyingSword;
+            if (sword == null) { player.RevealSword(); _swordCo = null; yield break; }
 
+            var from = chest.Vfx.position;
             var to = player.SwordTarget;
             const float duration = 0.6f;
             const float arcHeight = 2.5f;
@@ -99,8 +97,12 @@ namespace Project.Gameplay.Flow.States
                 ? (to - from).normalized
                 : Vector3.forward;
 
-            player.DetachSwordTo(from);
+            sword.SetParent(null, true);
+            sword.position = from;
+            sword.gameObject.SetActive(true);
 
+            var sideAxis = Vector3.Cross(Vector3.up, direction);
+            const float wobbleAmplitude = 0.15f;
             var elapsed = 0f;
             while (elapsed < duration && sword != null)
             {
@@ -109,13 +111,16 @@ namespace Project.Gameplay.Flow.States
                 var eased = Ease.InOutQuad(k);
                 var pos = Vector3.Lerp(from, to, eased);
                 pos.y += Mathf.Sin(k * Mathf.PI) * arcHeight;
+                var apex = Mathf.Sin(k * Mathf.PI);
+                pos += sideAxis * (Mathf.Sin(k * Mathf.PI * 5f) * wobbleAmplitude * apex);
                 sword.position = pos;
                 sword.rotation = Quaternion.Euler(0f, 0f, k * 1080f) *
                                  Quaternion.LookRotation(direction, Vector3.up);
                 yield return null;
             }
 
-            player.ReattachSword();
+            if (sword != null) sword.gameObject.SetActive(false);
+            player.RevealSword();
             _swordCo = null;
         }
     }

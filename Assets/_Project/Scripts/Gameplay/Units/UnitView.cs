@@ -1,30 +1,52 @@
-using System.Collections.Generic;
+using System.Collections;
 using Project.Core;
 using Project.Domain;
 using Project.Gameplay.Targeting;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace Project.Gameplay.Units
 {
+	/// <summary>Маппинг state-name (Idle/Attack/Hit/...) на конкретный AnimationClip и режим зацикливания.</summary>
+	[System.Serializable]
+	public struct AnimMapping
+	{
+		public string StateName;
+		public AnimationClip Clip;
+		public bool Loop;
+	}
+
 	/// <summary>
-	/// Базовый view юнита: реализует <see cref="ITappable"/>, держит лейбл силы и кольца подсветки.
+	/// Базовый view юнита. Держит ссылки на Anchor/Stop/Vfx-точки, лейбл силы, кольца подсветки
+	/// и проигрывает legacy-анимации по string-ключу через <see cref="LegacyClipMap"/>.
+	/// Реализует <see cref="ITappable"/> для системы тапов.
 	/// </summary>
 	public abstract class UnitView : MonoBehaviour, ITappable
 	{
+		[Header("Geometry anchors")]
 		[SerializeField] protected PowerLabel Label;
 		[SerializeField] protected Transform StopPoint;
 		[SerializeField] protected Transform AnchorPoint;
 		[SerializeField] protected Transform VfxPoint;
-		[SerializeField] protected GameObject HighlightRing;
-		[SerializeField] protected Animator AnimatorRef;
 
+		[Header("Highlight rings")]
+		[SerializeField] protected GameObject HighlightRing;
 		[SerializeField] protected GameObject WarningRing;
+
+		[Header("Animation")]
+		[SerializeField] protected Animation LegacyAnim;
+		[SerializeField] protected AnimMapping[] LegacyClipMap;
+
+		[Header("Preview tween")]
 		[SerializeField] private float _previewScale = 1.15f;
 		[SerializeField] private float _previewDuration = 0.12f;
+		[SerializeField] private float _ringPulseAmplitude = 0.08f;
+		[SerializeField] private float _ringPulseSpeed = 5f;
 
 		private Vector3 _baseScale;
 		private bool _baseScaleCached;
+		private Vector3 _highlightRingBaseScale = Vector3.one;
+		private Vector3 _warningRingBaseScale = Vector3.one;
+		private Coroutine _ringPulseCo;
 
 		public Unit Unit { get; private set; }
 		public UnitId Id => Unit.Id;
@@ -46,62 +68,20 @@ namespace Project.Gameplay.Units
 
 		protected virtual void Awake()
 		{
-			_baseScale = transform.localScale;
-			_baseScaleCached = true;
-
-			// Luna стрипает SHADOWCASTER variant у Mobile/Diffuse → отключаем тени на рантайме.
-			foreach (var r in GetComponentsInChildren<Renderer>(includeInactive: true))
-			{
-				r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-				r.receiveShadows = false;
-			}
-
-			if (AnimatorRef == null)
-				AnimatorRef = GetComponentInChildren<Animator>();
-
-			// Жёсткий дефолт: кольца ВСЕГДА выключены при старте, даже если в префабе активны.
-			// Иначе у героя/всех юнитов всё время висят рамки выделения.
-			if (HighlightRing != null) HighlightRing.SetActive(false);
-			if (WarningRing != null) WarningRing.SetActive(false);
-		}
-
-		// Прямой Animator API: в Editor работает безусловно, в Playworks — с ограничениями
-		// (state-machine тикает, но bones-transforms могут не применяться — это known limit плагина).
-		public void PlayAnim(string state)
-		{
-			if (AnimatorRef != null)
-				AnimatorRef.Play(state);
+			CacheBaseScale();
+			CacheRingScales();
+			DisableShadows();
+			HideRings();
+			InitLegacyAnim();
 		}
 
 		public virtual void Bind(Unit unit, Camera camera)
 		{
 			Unit = unit;
-			if (!_baseScaleCached)
-			{
-				_baseScale = transform.localScale;
-				_baseScaleCached = true;
-			}
-
-			if (Label != null)
-			{
-				Label.Init(unit.Kind, camera);
-				Label.Set(unit.Power.Value);
-			}
-
-			if (HighlightRing != null)
-				HighlightRing.SetActive(false);
-			if (WarningRing != null)
-				WarningRing.SetActive(false);
-
-			// Playworks плохо рендерит WorldSpace Canvas без явно назначенной camera.
-			// Идём по includeInactive — иначе HighlightRing/WarningRing (стартуют выключенными)
-			// получат worldCamera только после первого SetActive(true), а Luna может стрипнуть
-			// автоматическое назначение через CanvasRenderer.OnEnable.
-			foreach (var canvas in GetComponentsInChildren<Canvas>(includeInactive: true))
-			{
-				if (canvas.renderMode == RenderMode.WorldSpace)
-					canvas.worldCamera = camera;
-			}
+			CacheBaseScale();
+			InitLabel(camera);
+			HideRings();
+			AssignWorldSpaceCamera(camera);
 		}
 
 		public virtual void RefreshPower()
@@ -112,38 +92,154 @@ namespace Project.Gameplay.Units
 
 		public virtual void SetHighlighted(bool value)
 		{
-			if (HighlightRing != null)
-				HighlightRing.SetActive(value);
-			if (value && WarningRing != null)
-				WarningRing.SetActive(false);
+			if (HighlightRing != null) HighlightRing.SetActive(value);
+			if (value && WarningRing != null) WarningRing.SetActive(false);
+			RestartRingPulse(value ? HighlightRing : null);
 		}
 
 		public virtual void SetPreview(bool value, bool isWarning = false)
 		{
-			if (!_baseScaleCached)
-			{
-				_baseScale = transform.localScale;
-				_baseScaleCached = true;
-			}
+			CacheBaseScale();
 
+			GameObject activeRing = null;
 			if (value)
 			{
-				var ring = isWarning && WarningRing != null ? WarningRing : HighlightRing;
-				if (HighlightRing != null)
-					HighlightRing.SetActive(ring == HighlightRing);
-				if (WarningRing != null)
-					WarningRing.SetActive(ring == WarningRing);
+				var useWarning = isWarning && WarningRing != null;
+				if (HighlightRing != null) HighlightRing.SetActive(!useWarning);
+				if (WarningRing != null) WarningRing.SetActive(useWarning);
+				activeRing = useWarning ? WarningRing : HighlightRing;
 			}
 			else
 			{
-				if (HighlightRing != null)
-					HighlightRing.SetActive(false);
-				if (WarningRing != null)
-					WarningRing.SetActive(false);
+				HideRings();
 			}
+
+			RestartRingPulse(activeRing);
 
 			var target = value ? _baseScale * _previewScale : _baseScale;
 			StartCoroutine(Tween.Scale(transform, target, _previewDuration, Ease.OutBack));
+		}
+
+		public void PlayAnim(string state)
+		{
+			if (LegacyAnim == null)
+				return;
+
+			var entry = ResolveLegacyEntry(state);
+			if (entry.Clip == null)
+				return;
+
+			LegacyAnim.Play(entry.Clip.name);
+		}
+
+		private void CacheBaseScale()
+		{
+			if (_baseScaleCached)
+				return;
+
+			_baseScale = transform.localScale;
+			_baseScaleCached = true;
+		}
+
+		private void DisableShadows()
+		{
+			foreach (var r in GetComponentsInChildren<Renderer>(includeInactive: true))
+			{
+				r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+				r.receiveShadows = false;
+			}
+		}
+
+		private void HideRings()
+		{
+			if (HighlightRing != null)
+				HighlightRing.SetActive(false);
+			if (WarningRing != null)
+				WarningRing.SetActive(false);
+		}
+
+		private void CacheRingScales()
+		{
+			if (HighlightRing != null) _highlightRingBaseScale = HighlightRing.transform.localScale;
+			if (WarningRing != null) _warningRingBaseScale = WarningRing.transform.localScale;
+		}
+
+		private void RestartRingPulse(GameObject target)
+		{
+			if (_ringPulseCo != null)
+			{
+				StopCoroutine(_ringPulseCo);
+				_ringPulseCo = null;
+			}
+			if (HighlightRing != null) HighlightRing.transform.localScale = _highlightRingBaseScale;
+			if (WarningRing != null) WarningRing.transform.localScale = _warningRingBaseScale;
+			if (target == null) return;
+
+			var baseScale = target == HighlightRing ? _highlightRingBaseScale : _warningRingBaseScale;
+			_ringPulseCo = StartCoroutine(RingPulseRoutine(target.transform, baseScale));
+		}
+
+		private IEnumerator RingPulseRoutine(Transform ringTransform, Vector3 baseScale)
+		{
+			while (ringTransform != null && ringTransform.gameObject.activeInHierarchy)
+			{
+				var pulse = 1f + Mathf.Sin(Time.unscaledTime * _ringPulseSpeed) * _ringPulseAmplitude;
+				ringTransform.localScale = baseScale * pulse;
+				yield return null;
+			}
+			if (ringTransform != null) ringTransform.localScale = baseScale;
+			_ringPulseCo = null;
+		}
+
+		private void InitLegacyAnim()
+		{
+			ApplyLegacyWrapModes();
+			PlayAnim("Idle");
+		}
+
+		private void InitLabel(Camera camera)
+		{
+			if (Label == null)
+				return;
+
+			Label.Init(Unit.Kind, camera);
+			Label.Set(Unit.Power.Value);
+		}
+
+		private void AssignWorldSpaceCamera(Camera camera)
+		{
+			foreach (var canvas in GetComponentsInChildren<Canvas>(includeInactive: true))
+			{
+				if (canvas.renderMode == RenderMode.WorldSpace)
+					canvas.worldCamera = camera;
+			}
+		}
+
+		private AnimMapping ResolveLegacyEntry(string state)
+		{
+			if (LegacyClipMap == null)
+				return default;
+
+			for (int i = 0; i < LegacyClipMap.Length; i++)
+				if (LegacyClipMap[i].StateName == state)
+					return LegacyClipMap[i];
+
+			return default;
+		}
+
+		private void ApplyLegacyWrapModes()
+		{
+			if (LegacyClipMap == null)
+				return;
+
+			for (int i = 0; i < LegacyClipMap.Length; i++)
+			{
+				var entry = LegacyClipMap[i];
+				if (entry.Clip == null)
+					continue;
+
+				entry.Clip.wrapMode = entry.Loop ? WrapMode.Loop : WrapMode.Once;
+			}
 		}
 	}
 }

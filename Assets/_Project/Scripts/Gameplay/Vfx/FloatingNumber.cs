@@ -66,6 +66,7 @@ namespace Project.Gameplay.Vfx
         {
             var elapsed = 0f;
             duration = Mathf.Max(0.0001f, duration);
+            var baseScale = transform.localScale;
             while (elapsed < duration)
             {
                 if (this == null || target == null)
@@ -75,8 +76,11 @@ namespace Project.Gameplay.Vfx
                 var pos = Vector3.LerpUnclamped(from, target.position, Ease.InQuad(k));
                 pos.y += Mathf.Sin(k * Mathf.PI) * _arcHeight;
                 transform.position = pos;
+                var pop = k < 0.15f ? Mathf.SmoothStep(1.4f, 1f, k / 0.15f) : 1f;
+                transform.localScale = baseScale * pop;
                 yield return null;
             }
+            if (this != null) transform.localScale = baseScale;
             pool.Release(this);
         }
     }

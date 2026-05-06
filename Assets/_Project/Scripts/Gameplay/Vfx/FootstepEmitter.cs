@@ -8,8 +8,6 @@ namespace Project.Gameplay.Vfx
 	public sealed class FootstepEmitter : MonoBehaviour
 	{
 		[SerializeField] private Sprite _footSprite;
-		[SerializeField] private Animator _animator;
-		[SerializeField] private string _runStateName = "Run";
 		[SerializeField] private float _emitDistance = 0.4f;
 		[SerializeField] private float _sideOffset = 0.18f;
 		[SerializeField] private float _lifetime = 0.9f;
@@ -18,16 +16,10 @@ namespace Project.Gameplay.Vfx
 		[SerializeField] private float _yOffset = 0.02f;
 		[SerializeField] private float _minStepSpeed = 1.5f;
 
-		private int _runHash;
 		private float _accumDistance;
 		private bool _leftFoot;
 		private Vector3 _lastPos;
 		private bool _initialized;
-
-		private void Awake()
-		{
-			_runHash = Animator.StringToHash(_runStateName);
-		}
 
 		private void OnEnable()
 		{
@@ -44,12 +36,6 @@ namespace Project.Gameplay.Vfx
 			var lastPos = _lastPos;
 			_lastPos = transform.position;
 
-			if (!IsRunning())
-			{
-				_accumDistance = 0f;
-				return;
-			}
-
 			var delta = Vector3.Distance(transform.position, lastPos);
 			var dt = Mathf.Max(Time.deltaTime, 0.0001f);
 			if (delta / dt < _minStepSpeed)
@@ -64,15 +50,6 @@ namespace Project.Gameplay.Vfx
 
 			Emit();
 			_accumDistance = 0f;
-		}
-
-		private bool IsRunning()
-		{
-			if (_animator == null)
-				return true;
-
-			var info = _animator.GetCurrentAnimatorStateInfo(0);
-			return info.shortNameHash == _runHash;
 		}
 
 		private void Emit()

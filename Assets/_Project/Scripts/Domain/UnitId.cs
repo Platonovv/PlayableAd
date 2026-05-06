@@ -10,7 +10,6 @@ namespace Project.Domain
 
         private UnitId(int value) => Value = value;
 
-        // Single-threaded в playable, не нужен Interlocked.
         public static UnitId Next() => new UnitId(++_counter);
 
         public bool Equals(UnitId other) => Value == other.Value;

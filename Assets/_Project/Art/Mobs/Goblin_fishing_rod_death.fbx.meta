@@ -24,7 +24,7 @@ ModelImporter:
     animationDoRetargetingWarnings: 0
     importAnimatedCustomProperties: 0
     importConstraints: 0
-    animationCompression: 3
+    animationCompression: 1
     animationRotationError: 2
     animationPositionError: 2
     animationScaleError: 2
@@ -33,7 +33,7 @@ ModelImporter:
     extraUserProperties: []
     clipAnimations:
     - serializedVersion: 16
-      name: Armature.002_mixamo.com
+      name: Goblin_Idle
       takeName: Armature.002|mixamo.com
       internalID: -8426595984609675583
       firstFrame: 0
@@ -62,7 +62,7 @@ ModelImporter:
       maskSource: {instanceID: 0}
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
-      name: Armature.002_mixamo.com.001
+      name: Goblin_Attack
       takeName: Armature.002|mixamo.com.001
       internalID: -5953669697240525168
       firstFrame: 0
@@ -91,7 +91,7 @@ ModelImporter:
       maskSource: {instanceID: 0}
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
-      name: "Armature.002_\u0426\u0438\u043B\u0438\u043D\u0434\u0440.012Action"
+      name: Goblin_Hit
       takeName: "Armature.002|\u0426\u0438\u043B\u0438\u043D\u0434\u0440.012Action"
       internalID: -5734087179849066231
       firstFrame: 0
@@ -120,7 +120,7 @@ ModelImporter:
       maskSource: {instanceID: 0}
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
-      name: "Armature.002_\u0426\u0438\u043B\u0438\u043D\u0434\u0440.012Action.001"
+      name: Goblin_Death
       takeName: "Armature.002|\u0426\u0438\u043B\u0438\u043D\u0434\u0440.012Action.001"
       internalID: -7650402193522613591
       firstFrame: 0
@@ -173,7 +173,7 @@ ModelImporter:
     skinWeightsMode: 0
     maxBonesPerVertex: 4
     minBoneWeight: 0.001
-    optimizeBones: 1
+    optimizeBones: 0
     meshOptimizationFlags: -1
     indexFormat: 0
     secondaryUVAngleDistortion: 8
@@ -213,9 +213,9 @@ ModelImporter:
     skeletonHasParents: 1
   lastHumanDescriptionAvatarSource: {instanceID: 0}
   autoGenerateAvatarMappingIfUnspecified: 1
-  animationType: 2
+  animationType: 1
   humanoidOversampling: 1
-  avatarSetup: 1
+  avatarSetup: 0
   addHumanoidExtraRootOnlyWhenUsingAvatar: 1
   importBlendShapeDeformPercent: 1
   remapMaterialsIfMaterialImportModeIsNone: 0

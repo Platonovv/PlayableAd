@@ -33,3 +33,6 @@ MonoBehaviour:
   - Key: win
     Clip: {fileID: 8300000, guid: bda5314d8b2297949995e6faacb0d713, type: 3}
     Volume: 0.8
+  - Key: click
+    Clip: {fileID: 8300000, guid: ad81e3e128eea0841adc2b72d9d5491a, type: 3}
+    Volume: 0.8

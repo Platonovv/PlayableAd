@@ -78,7 +78,7 @@ namespace Project.Gameplay.Flow.States
 
 				ctx.Vfx.Play("death", enemy.Vfx.position);
 				_refreshCo = _flow.StartCoroutine(RefreshPlayerOnNumberLand(ctx));
-				yield return enemy.PlayDeath();
+				yield return _flow.StartCoroutine(SafePlayDeath(enemy));
 
 				_co = null;
 				if (ctx.Battle.IsOver)
@@ -88,19 +88,51 @@ namespace Project.Gameplay.Flow.States
 			}
 			else
 			{
+				UnityEngine.Debug.Log("[flow] Attack: lose branch start");
 				ctx.Signals.Fire(new AttackFailedSignal(ctx.Battle.Player.Id, enemy.Id));
 
+				UnityEngine.Debug.Log("[flow] Attack: enemy.PlayAttack");
 				yield return enemy.PlayAttack();
+				UnityEngine.Debug.Log("[flow] Attack: enemy.PlayAttack done");
 
 				ctx.Player.PlayHurt();
 				ctx.Vfx.Play("block", ctx.Player.Vfx.position);
 				ctx.Shake.Shake(ctx.Balance.HitShakeAmplitude, ctx.Balance.HitShakeDuration);
 
 				yield return new WaitForSeconds(ctx.Balance.HitReactionDelay);
-				yield return ctx.Player.PlayDeath();
+				UnityEngine.Debug.Log("[flow] Attack: starting Player.PlayDeath");
+				// Watchdog: PlayDeath с таймаутом, чтобы flow не залип на Tween/анимации в Playworks.
+				const float maxDeathTime = 1.5f;
+				var deathCo = _flow.StartCoroutine(ctx.Player.PlayDeath());
+				var elapsed = 0f;
+				while (deathCo != null && elapsed < maxDeathTime)
+				{
+					elapsed += Time.deltaTime;
+					yield return null;
+					if (ctx.Player == null) break;
+				}
+				UnityEngine.Debug.Log($"[flow] Attack: PlayDeath done elapsed={elapsed:F2}");
 				_co = null;
+				UnityEngine.Debug.Log("[flow] Attack: calling GoLost");
 				_flow.GoLost();
 			}
+		}
+
+		// Watchdog: если PlayDeath по какой-то причине зависнет в Playworks
+		// (Tween на отключённом transform, NRE и т.п.), state всё равно завершится.
+		private IEnumerator SafePlayDeath(EnemyView enemy)
+		{
+			const float maxDeathTime = 1.5f;
+			var inner = _flow.StartCoroutine(enemy.PlayDeath());
+			var elapsed = 0f;
+			while (inner != null && elapsed < maxDeathTime)
+			{
+				elapsed += Time.deltaTime;
+				yield return null;
+				// PlayDeath сам себя завершит и сделает SetActive(false). Если объект отключился — выходим.
+				if (enemy == null || !enemy.gameObject.activeInHierarchy) yield break;
+			}
+			if (enemy != null) enemy.gameObject.SetActive(false);
 		}
 
 		private IEnumerator RefreshPlayerOnNumberLand(BattleFlowContext ctx)

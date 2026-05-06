@@ -56,7 +56,7 @@ namespace Project.Gameplay.Units
 			if (_animator != null)
 			{
 				_animator.applyRootMotion = false;
-				_animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+				// cullingMode не трогаем — Luna Playworks ругается на этот setter.
 			}
 
 			_flairBaseScale = transform.localScale;

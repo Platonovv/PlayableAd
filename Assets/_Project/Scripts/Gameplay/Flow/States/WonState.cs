@@ -10,6 +10,7 @@ namespace Project.Gameplay.Flow.States
     {
         public void Enter(BattleFlowContext ctx)
         {
+            UnityEngine.Debug.Log("[flow] WonState.Enter — firing BattleWonSignal");
             ctx.Input.SetEnabled(false);
             ctx.Indicator.Hide();
             ctx.Player.PlayVictory();

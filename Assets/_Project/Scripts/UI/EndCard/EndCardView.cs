@@ -31,7 +31,8 @@ namespace Project.UI.EndCard
 
         public void Show(string title, float delay, bool showCta)
         {
-            _title.text = title;
+            Debug.Log($"[endcard] View.Show title={title} delay={delay} cta={showCta} group={(_group != null)} title_field={(_title != null)}");
+            if (_title != null) _title.text = title;
             if (_ctaButton != null) _ctaButton.gameObject.SetActive(showCta);
             if (_retryButton != null) _retryButton.gameObject.SetActive(true);
 
@@ -42,9 +43,12 @@ namespace Project.UI.EndCard
         private IEnumerator ShowRoutine(float delay)
         {
             yield return new WaitForSeconds(delay);
-            _group.blocksRaycasts = true;
-            // Сразу alpha=1 без Tween — на случай если Playworks стрипает CanvasGroup.alpha setter.
-            _group.alpha = 1f;
+            if (_group != null)
+            {
+                _group.blocksRaycasts = true;
+                _group.alpha = 1f;
+            }
+            Debug.Log("[endcard] View shown (alpha=1)");
             _co = null;
         }
 

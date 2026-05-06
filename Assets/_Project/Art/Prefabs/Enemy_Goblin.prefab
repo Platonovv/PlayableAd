@@ -8,6 +8,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 618541870512516428, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
+      propertyPath: _text
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 2570098097646946325, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -94,11 +98,6 @@ Animator:
   m_CorrespondingSourceObject: {fileID: 4075683898525711425, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
   m_PrefabInstance: {fileID: 2438031459162637138}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &2359605531788840913 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 102069912265018499, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
-  m_PrefabInstance: {fileID: 2438031459162637138}
-  m_PrefabAsset: {fileID: 0}
 --- !u!114 &2972411197007556126 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 618541870512516428, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
@@ -110,9 +109,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bee6d7029a92014498a0e96775711804, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Project.Runtime::Project.Gameplay.Units.PowerLabel
---- !u!1 &4134319642372529759 stripped
+--- !u!1 &3944477964418062230 stripped
 GameObject:
-  m_CorrespondingSourceObject: {fileID: 1780519986605137165, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
+  m_CorrespondingSourceObject: {fileID: 1686661276864042180, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
   m_PrefabInstance: {fileID: 2438031459162637138}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &6450996415550349375 stripped
@@ -146,8 +145,9 @@ MonoBehaviour:
   StopPoint: {fileID: 0}
   AnchorPoint: {fileID: 6494256714696070305}
   VfxPoint: {fileID: 0}
-  HighlightRing: {fileID: 4134319642372529759}
-  WarningRing: {fileID: 2359605531788840913}
+  HighlightRing: {fileID: 9115405153588886354}
+  AnimatorRef: {fileID: 0}
+  WarningRing: {fileID: 3944477964418062230}
   _previewScale: 1.15
   _previewDuration: 0.12
   _animator: {fileID: 1826803765533654803}
@@ -190,6 +190,11 @@ MonoBehaviour:
     m_VerticalOverflow: 1
     m_LineSpacing: 1
   m_Text: 12
+--- !u!1 &9115405153588886354 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6869621111054923776, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
+  m_PrefabInstance: {fileID: 2438031459162637138}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &5279144261066200800
 PrefabInstance:
   m_ObjectHideFlags: 0

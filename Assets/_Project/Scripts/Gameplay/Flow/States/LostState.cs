@@ -10,6 +10,7 @@ namespace Project.Gameplay.Flow.States
     {
         public void Enter(BattleFlowContext ctx)
         {
+            UnityEngine.Debug.Log("[flow] LostState.Enter — firing BattleLostSignal");
             ctx.Input.SetEnabled(false);
             ctx.Indicator.Hide();
             ctx.Signals.Fire(new BattleLostSignal());

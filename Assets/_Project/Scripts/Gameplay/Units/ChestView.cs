@@ -23,8 +23,7 @@ namespace Project.Gameplay.Units
             base.Bind(unit, camera);
             _basePosition = transform.localPosition;
             _basePositionCached = true;
-            if (_animator != null)
-                _animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            // cullingMode не трогаем — Luna Playworks предупреждает об этом setter'е.
         }
 
         public IEnumerator PlayOpen()

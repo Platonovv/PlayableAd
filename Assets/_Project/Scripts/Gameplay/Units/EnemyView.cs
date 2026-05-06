@@ -21,7 +21,8 @@ namespace Project.Gameplay.Units
 			base.Awake();
 			if (_animator != null)
 			{
-				_animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+				// Luna Playworks ругается на cullingMode setter — оставляем дефолт (AlwaysAnimate
+				// нужен только если объект уезжает за границы фрустума; у нас все юниты в кадре).
 				_animator.applyRootMotion = false;
 			}
 		}
@@ -29,8 +30,11 @@ namespace Project.Gameplay.Units
 		public IEnumerator PlayDeath()
 		{
 			Cross("Death");
-			yield return new WaitForSeconds(_balance.DeathAnimDuration);
-			yield return Tween.Scale(transform, Vector3.zero, _balance.DeathFadeDuration, Ease.InQuad);
+			// Дефолты на случай отсутствия Configure (Luna строит билд иначе чем Editor — параноим).
+			var deathDuration = _balance != null ? _balance.DeathAnimDuration : 0.4f;
+			var fadeDuration = _balance != null ? _balance.DeathFadeDuration : 0.2f;
+			yield return new WaitForSeconds(deathDuration);
+			yield return Tween.Scale(transform, Vector3.zero, fadeDuration, Ease.InQuad);
 			if (this != null) gameObject.SetActive(false);
 		}
 
@@ -39,7 +43,9 @@ namespace Project.Gameplay.Units
 		public IEnumerator PlayAttack()
 		{
 			Cross("Attack");
-			yield return new WaitForSeconds(_balance.AttackWindup + _balance.AttackImpactDelay);
+			var windup = _balance != null ? _balance.AttackWindup : 0.2f;
+			var impact = _balance != null ? _balance.AttackImpactDelay : 0.15f;
+			yield return new WaitForSeconds(windup + impact);
 		}
 
 		public void PlayIdle() => Cross("Idle");

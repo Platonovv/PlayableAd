@@ -3,8 +3,7 @@
     "rootNamespace": "Project.EditorTools",
     "references": [
         "Project.Domain",
-        "Project.Runtime",
-        "Unity.TextMeshPro"
+        "Project.Runtime"
     ],
     "includePlatforms": [
         "Editor"

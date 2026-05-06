@@ -8,6 +8,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 618541870512516428, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
+      propertyPath: _text
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 2570098097646946325, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -96,9 +100,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bee6d7029a92014498a0e96775711804, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Project.Runtime::Project.Gameplay.Units.PowerLabel
---- !u!1 &1285770452932574174 stripped
+--- !u!1 &2164662873329725975 stripped
 GameObject:
-  m_CorrespondingSourceObject: {fileID: 1780519986605137165, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
+  m_CorrespondingSourceObject: {fileID: 1686661276864042180, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
   m_PrefabInstance: {fileID: 676195341630449363}
   m_PrefabAsset: {fileID: 0}
 --- !u!95 &3597787854099405458 stripped
@@ -127,8 +131,9 @@ MonoBehaviour:
   StopPoint: {fileID: 0}
   AnchorPoint: {fileID: 8257289133023719712}
   VfxPoint: {fileID: 0}
-  HighlightRing: {fileID: 1285770452932574174}
-  WarningRing: {fileID: 0}
+  HighlightRing: {fileID: 6212601424012631763}
+  AnimatorRef: {fileID: 0}
+  WarningRing: {fileID: 2164662873329725975}
   _previewScale: 1.15
   _previewDuration: 0.12
   _animator: {fileID: 3597787854099405458}
@@ -174,6 +179,11 @@ MonoBehaviour:
     m_VerticalOverflow: 1
     m_LineSpacing: 1
   m_Text: 12
+--- !u!1 &6212601424012631763 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6869621111054923776, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
+  m_PrefabInstance: {fileID: 676195341630449363}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &8156440772125099454 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8670321803848033133, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}

@@ -2,8 +2,7 @@
     "name": "Project.Runtime",
     "rootNamespace": "Project",
     "references": [
-        "Project.Domain",
-        "Unity.TextMeshPro"
+        "Project.Domain"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

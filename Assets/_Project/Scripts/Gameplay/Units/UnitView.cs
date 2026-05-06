@@ -58,6 +58,11 @@ namespace Project.Gameplay.Units
 
 			if (AnimatorRef == null)
 				AnimatorRef = GetComponentInChildren<Animator>();
+
+			// Жёсткий дефолт: кольца ВСЕГДА выключены при старте, даже если в префабе активны.
+			// Иначе у героя/всех юнитов всё время висят рамки выделения.
+			if (HighlightRing != null) HighlightRing.SetActive(false);
+			if (WarningRing != null) WarningRing.SetActive(false);
 		}
 
 		// Прямой Animator API: в Editor работает безусловно, в Playworks — с ограничениями
@@ -68,7 +73,7 @@ namespace Project.Gameplay.Units
 				AnimatorRef.Play(state);
 		}
 
-public virtual void Bind(Unit unit, Camera camera)
+		public virtual void Bind(Unit unit, Camera camera)
 		{
 			Unit = unit;
 			if (!_baseScaleCached)
@@ -89,12 +94,14 @@ public virtual void Bind(Unit unit, Camera camera)
 				WarningRing.SetActive(false);
 
 			// Playworks плохо рендерит WorldSpace Canvas без явно назначенной camera.
+			// Идём по includeInactive — иначе HighlightRing/WarningRing (стартуют выключенными)
+			// получат worldCamera только после первого SetActive(true), а Luna может стрипнуть
+			// автоматическое назначение через CanvasRenderer.OnEnable.
 			foreach (var canvas in GetComponentsInChildren<Canvas>(includeInactive: true))
 			{
-				if (canvas.renderMode == RenderMode.WorldSpace && canvas.worldCamera == null)
+				if (canvas.renderMode == RenderMode.WorldSpace)
 					canvas.worldCamera = camera;
 			}
-
 		}
 
 		public virtual void RefreshPower()

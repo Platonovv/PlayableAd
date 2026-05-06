@@ -18,12 +18,15 @@ namespace Project.UI.EndCard
 
         private void Start()
         {
-            if (_root == null) return;
+            Debug.Log($"[endcard] Presenter.Start root={(_root != null)} view={(_view != null)}");
+            if (_root == null) { Debug.LogError("[endcard] _root is NULL — set GameRoot in inspector!"); return; }
+            if (_view == null) { Debug.LogError("[endcard] _view is NULL — set EndCardView in inspector!"); return; }
             _signals = _root.Signals;
             _signals.Subscribe<BattleWonSignal>(OnWon);
             _signals.Subscribe<BattleLostSignal>(OnLost);
             _view.CtaClicked += OnCta;
             _view.RetryClicked += OnRetry;
+            Debug.Log("[endcard] Presenter subscribed");
         }
 
         private void OnDestroy()
@@ -43,12 +46,14 @@ namespace Project.UI.EndCard
         private void OnWon(BattleWonSignal signal)
         {
             var delay = _root.Balance.EndCardDelay;
+            Debug.Log($"[endcard] OnWon fired, delay={delay}");
             _view.Show(_winTitle, delay, showCta: true);
         }
 
         private void OnLost(BattleLostSignal signal)
         {
             var delay = _root.Balance.EndCardDelay;
+            Debug.Log($"[endcard] OnLost fired, delay={delay}");
             _view.Show(_loseTitle, delay, showCta: false);
         }
 

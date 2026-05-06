@@ -12,7 +12,7 @@ namespace Project.Gameplay.Targeting
 		[SerializeField] private float _heightOffset = 0.05f;
 		[SerializeField] private float _dashWorldLength = 0.5f;
 		[SerializeField] private float _flowSpeed = 1.5f;
-		[SerializeField] private Color _color = new(1f, 0.85f, 0.2f, 1f);
+		[SerializeField] private Color _color = new Color(1f, 0.85f, 0.2f, 1f);
 
 		private Transform _from;
 		private Transform _to;
@@ -32,11 +32,24 @@ namespace Project.Gameplay.Targeting
 
 		private void ConfigureLine()
 		{
-			var shader = Shader.Find("Sprites/Default") ?? Shader.Find("Unlit/Transparent");
-			_runtimeMaterial = new Material(shader)
+			// В Playworks Shader.Find часто возвращает null — берём inspector-материал LineRenderer'а
+			// (он уже сериализован с правильным шейдером Sprites/Default), клонируем как instance.
+			Material baseMat = _line.sharedMaterial;
+			if (baseMat != null)
 			{
-				name = "DashedIndicator", mainTexture = BuildDashTexture(), color = _color
-			};
+				_runtimeMaterial = new Material(baseMat) { name = "DashedIndicator" };
+			}
+			else
+			{
+				var shader = Shader.Find("Sprites/Default");
+				if (shader == null) shader = Shader.Find("Mobile/Diffuse");
+				if (shader == null) { _line.enabled = false; return; }
+				_runtimeMaterial = new Material(shader) { name = "DashedIndicator" };
+			}
+
+			_runtimeMaterial.mainTexture = BuildDashTexture();
+			_runtimeMaterial.color = _color;
+
 			_line.material = _runtimeMaterial;
 			_line.textureMode = LineTextureMode.Tile;
 			_line.startColor = _color;

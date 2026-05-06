@@ -32,22 +32,18 @@ namespace Project.EditorTools.Tools.Postprocessors
     /// </summary>
     public sealed class UnitTexturePostprocessor : AssetPostprocessor
     {
-        private static readonly (string root, int max)[] Roots =
-        {
-            ("/Art/Heroes/", 256),
-            ("/Art/Mobs/",   128),
-            ("/Art/Chest/",  128),
-        };
+        private static readonly string[] Roots = { "/Art/Heroes/", "/Art/Mobs/", "/Art/Chest/", "/Art/Backgrounds/" };
+        private static readonly int[] Maxes    = { 256, 128, 128, 512 };
 
         private void OnPreprocessTexture()
         {
             int max = -1;
-            foreach (var (root, m) in Roots)
+            for (var i = 0; i < Roots.Length; i++)
             {
-                if (assetPath.Contains(root)) { max = m; break; }
+                if (assetPath.Contains(Roots[i])) { max = Maxes[i]; break; }
             }
             if (max < 0) return;
-            if (assetImporter is not TextureImporter t) return;
+            if (!(assetImporter is TextureImporter t)) return;
             if (t.textureType != TextureImporterType.Default) return;
 
             t.mipmapEnabled = false;

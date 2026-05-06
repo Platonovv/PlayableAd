@@ -49,7 +49,7 @@ namespace Project.EditorTools.Tools
 
             foreach (var p in fbxPaths)
             {
-                if (AssetImporter.GetAtPath(p) is not ModelImporter mi) continue;
+                if (!(AssetImporter.GetAtPath(p) is ModelImporter mi)) continue;
 
                 var src = mi.clipAnimations;
                 if (src == null || src.Length == 0) src = mi.defaultClipAnimations;

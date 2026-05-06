@@ -1,76 +1,102 @@
 using System;
-using System.Threading;
-using Cysharp.Threading.Tasks;
+using System.Collections;
 using UnityEngine;
 
 namespace Project.Core
 {
     /// <summary>
-    /// Tween-хелперы поверх UniTask. Устойчивы к уничтожению цели во время анимации.
+    /// Tween-хелперы на корутинах. Возвращают IEnumerator — caller делает StartCoroutine.
+    /// Устойчивы к уничтожению цели во время анимации. Все методы — non-generic,
+    /// чтобы Luna транспилировала их без pattern-matching костылей.
     /// </summary>
     public static class Tween
     {
-        public static UniTask Move(Transform t, Vector3 to, float duration, Func<float, float> ease = null, CancellationToken ct = default)
-            => Run(t, duration, ease, t.position, to, v => t.position = v, ct);
-
-        public static UniTask LocalMove(Transform t, Vector3 to, float duration, Func<float, float> ease = null, CancellationToken ct = default)
-            => Run(t, duration, ease, t.localPosition, to, v => t.localPosition = v, ct);
-
-        public static UniTask Scale(Transform t, Vector3 to, float duration, Func<float, float> ease = null, CancellationToken ct = default)
-            => Run(t, duration, ease, t.localScale, to, v => t.localScale = v, ct);
-
-        public static UniTask Punch(Transform t, float amplitude, float duration, CancellationToken ct = default)
-            => RunPunch(t, amplitude, duration, ct);
-
-        public static UniTask Fade(CanvasGroup g, float to, float duration, CancellationToken ct = default)
-            => Run(g, duration, Ease.Linear, g.alpha, to, v => g.alpha = v, ct);
-
-        private static async UniTask Run<TVal>(UnityEngine.Object owner, float duration, Func<float, float> ease, TVal from, TVal to, Action<TVal> apply, CancellationToken ct)
-            where TVal : struct
+        public static IEnumerator Move(Transform t, Vector3 to, float duration, Func<float, float> ease = null)
         {
-            ease ??= Ease.Linear;
-            var elapsed = 0f;
+            if (t == null) yield break;
+            if (ease == null) ease = Ease.Linear;
             duration = Mathf.Max(0.0001f, duration);
+            var from = t.position;
+            var elapsed = 0f;
             while (elapsed < duration)
             {
-                if (owner == null) return;
-                if (ct.IsCancellationRequested) return;
+                if (t == null) yield break;
                 elapsed += Time.deltaTime;
                 var k = ease(Mathf.Clamp01(elapsed / duration));
-                apply(Lerp(from, to, k));
-                await UniTask.Yield(PlayerLoopTiming.Update, ct).SuppressCancellationThrow();
+                t.position = Vector3.LerpUnclamped(from, to, k);
+                yield return null;
             }
-            if (owner == null) return;
-            apply(to);
+            if (t != null) t.position = to;
         }
 
-        private static async UniTask RunPunch(Transform t, float amplitude, float duration, CancellationToken ct)
+        public static IEnumerator LocalMove(Transform t, Vector3 to, float duration, Func<float, float> ease = null)
         {
-            if (t == null) return;
-            var origin = t.localScale;
-            var elapsed = 0f;
+            if (t == null) yield break;
+            if (ease == null) ease = Ease.Linear;
             duration = Mathf.Max(0.0001f, duration);
-            while (elapsed < duration && t != null && !ct.IsCancellationRequested)
+            var from = t.localPosition;
+            var elapsed = 0f;
+            while (elapsed < duration)
+            {
+                if (t == null) yield break;
+                elapsed += Time.deltaTime;
+                var k = ease(Mathf.Clamp01(elapsed / duration));
+                t.localPosition = Vector3.LerpUnclamped(from, to, k);
+                yield return null;
+            }
+            if (t != null) t.localPosition = to;
+        }
+
+        public static IEnumerator Scale(Transform t, Vector3 to, float duration, Func<float, float> ease = null)
+        {
+            if (t == null) yield break;
+            if (ease == null) ease = Ease.Linear;
+            duration = Mathf.Max(0.0001f, duration);
+            var from = t.localScale;
+            var elapsed = 0f;
+            while (elapsed < duration)
+            {
+                if (t == null) yield break;
+                elapsed += Time.deltaTime;
+                var k = ease(Mathf.Clamp01(elapsed / duration));
+                t.localScale = Vector3.LerpUnclamped(from, to, k);
+                yield return null;
+            }
+            if (t != null) t.localScale = to;
+        }
+
+        public static IEnumerator Fade(CanvasGroup g, float to, float duration)
+        {
+            if (g == null) yield break;
+            duration = Mathf.Max(0.0001f, duration);
+            var from = g.alpha;
+            var elapsed = 0f;
+            while (elapsed < duration)
+            {
+                if (g == null) yield break;
+                elapsed += Time.deltaTime;
+                var k = Mathf.Clamp01(elapsed / duration);
+                g.alpha = Mathf.LerpUnclamped(from, to, k);
+                yield return null;
+            }
+            if (g != null) g.alpha = to;
+        }
+
+        public static IEnumerator Punch(Transform t, float amplitude, float duration)
+        {
+            if (t == null) yield break;
+            var origin = t.localScale;
+            duration = Mathf.Max(0.0001f, duration);
+            var elapsed = 0f;
+            while (elapsed < duration && t != null)
             {
                 elapsed += Time.deltaTime;
                 var k = elapsed / duration;
                 var bump = Mathf.Sin(k * Mathf.PI) * amplitude;
                 t.localScale = origin * (1f + bump);
-                await UniTask.Yield(PlayerLoopTiming.Update, ct).SuppressCancellationThrow();
+                yield return null;
             }
             if (t != null) t.localScale = origin;
-        }
-
-        private static TVal Lerp<TVal>(TVal a, TVal b, float k) where TVal : struct
-        {
-            return a switch
-            {
-                Vector3 va when b is Vector3 vb => (TVal)(object)Vector3.LerpUnclamped(va, vb, k),
-                Vector2 va when b is Vector2 vb => (TVal)(object)Vector2.LerpUnclamped(va, vb, k),
-                float fa when b is float fb => (TVal)(object)Mathf.LerpUnclamped(fa, fb, k),
-                Color ca when b is Color cb => (TVal)(object)Color.LerpUnclamped(ca, cb, k),
-                _ => b
-            };
         }
     }
 

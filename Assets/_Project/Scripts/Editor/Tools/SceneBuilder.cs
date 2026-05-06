@@ -13,12 +13,10 @@ using Project.Integration;
 using Project.UI.Common;
 using Project.UI.EndCard;
 using Project.UI.Hud;
-using TMPro;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.TextCore.Text;
 using UnityEngine.UI;
 
 namespace Project.EditorTools.Tools
@@ -144,8 +142,11 @@ namespace Project.EditorTools.Tools
             var canvasGO = new GameObject("Canvas",
                 typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             var canvas = canvasGO.GetComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 0;
+            // Screen Space - Camera: Playworks плохо рендерит Screen Space Overlay (release notes 7.0-7.2).
+            canvas.renderMode = RenderMode.ScreenSpaceCamera;
+            canvas.worldCamera = cam;
+            canvas.planeDistance = 1f;
+            canvas.sortingOrder = 100;
             var scaler = canvasGO.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1080f, 1920f);
@@ -171,12 +172,12 @@ namespace Project.EditorTools.Tools
             endCardGroup.alpha = 0f;
             endCardGroup.blocksRaycasts = false;
 
-            var titleText = CreateUiText(endCardGO.transform, "Title", "Победа!", 140,
+            var titleText = CreateUiText(endCardGO.transform, "Title", "YOU WIN!", 140,
                 anchor: new Vector2(0.5f, 0.7f), pivot: new Vector2(0.5f, 0.5f),
                 anchored: Vector2.zero, sizeDelta: new Vector2(900f, 200f), color: Color.white);
 
-            var ctaButton    = CreateButton(endCardGO.transform, "CTA",   "Играть!",  new Vector2(0f, -120f));
-            var retryButton  = CreateButton(endCardGO.transform, "Retry", "Заново",   new Vector2(0f, -320f), small: true);
+            var ctaButton    = CreateButton(endCardGO.transform, "CTA",   "PLAY!",   new Vector2(0f, -120f));
+            var retryButton  = CreateButton(endCardGO.transform, "Retry", "RETRY",   new Vector2(0f, -320f), small: true);
 
             var endCardView      = endCardGO.GetComponent<EndCardView>();
             var endCardPresenter = endCardGO.GetComponent<EndCardPresenter>();
@@ -185,7 +186,8 @@ namespace Project.EditorTools.Tools
             SetField(endCardView, "_retryButton", retryButton);
             SetField(endCardView, "_title",       titleText);
             SetField(endCardPresenter, "_view",     endCardView);
-            SetField(endCardPresenter, "_winTitle", "Победа!");
+            SetField(endCardPresenter, "_winTitle", "YOU WIN!");
+            SetField(endCardPresenter, "_loseTitle", "GAME OVER");
 
             var eventSystemGO = new GameObject("EventSystem",
                 typeof(UnityEngine.EventSystems.EventSystem),
@@ -204,6 +206,10 @@ namespace Project.EditorTools.Tools
             SetField(audioService,    "_root", gameRoot);
             SetField(analyticsGO.GetComponent<AnalyticsService>(), "_root", gameRoot);
             SetField(mraidGO.GetComponent<MraidBridge>(),          "_root", gameRoot);
+
+            // Luna стрипает SHADOWCASTER variant у Mobile/Diffuse → нет теней в playable вообще,
+            // отключаем у всех рендереров на сцене, чтобы не запрашивался отсутствующий pass.
+            DisableShadowsInScene(scene);
 
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -309,7 +315,7 @@ namespace Project.EditorTools.Tools
             line.enabled = false;
         }
 
-        private static TMP_Text CreateUiText(Transform parent, string name, string content, float fontSize,
+        private static Text CreateUiText(Transform parent, string name, string content, float fontSize,
             Vector2 anchor, Vector2 pivot, Vector2 anchored, Vector2 sizeDelta, Color? color = null)
         {
             var go = new GameObject(name, typeof(RectTransform));
@@ -319,13 +325,25 @@ namespace Project.EditorTools.Tools
             rect.pivot = pivot;
             rect.anchoredPosition = anchored;
             rect.sizeDelta = sizeDelta;
-            var tmp = go.AddComponent<TextMeshProUGUI>();
-            tmp.text = content;
-            tmp.fontSize = fontSize;
-            tmp.alignment = TextAlignmentOptions.Center;
-            tmp.color = color ?? Color.white;
-            tmp.fontStyle = TMPro.FontStyles.Bold;
-            return tmp;
+            var ui = go.AddComponent<Text>();
+            ui.font = LegacyFont();
+            ui.text = content;
+            ui.fontSize = Mathf.Max(1, Mathf.RoundToInt(fontSize));
+            ui.alignment = TextAnchor.MiddleCenter;
+            ui.color = color ?? Color.white;
+            ui.fontStyle = FontStyle.Bold;
+            ui.horizontalOverflow = HorizontalWrapMode.Overflow;
+            ui.verticalOverflow = VerticalWrapMode.Overflow;
+            return ui;
+        }
+
+        private static Font LegacyFont()
+        {
+            try { return Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); }
+            catch { }
+            try { return Resources.GetBuiltinResource<Font>("Arial.ttf"); }
+            catch { }
+            return null;
         }
 
         private static CanvasGroup CreateHintGroup(Transform parent)
@@ -338,7 +356,7 @@ namespace Project.EditorTools.Tools
             rect.pivot = new Vector2(0.5f, 0.5f);
             rect.anchoredPosition = new Vector2(0f, -200f);
             rect.sizeDelta = new Vector2(800f, 100f);
-            var hint = CreateUiText(go.transform, "Text", "Тапни по цели", 60,
+            var hint = CreateUiText(go.transform, "Text", "TAP TARGET", 60,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(800f, 100f),
                 color: new Color(1f, 1f, 1f, 0.8f));
             return go.GetComponent<CanvasGroup>();
@@ -361,6 +379,18 @@ namespace Project.EditorTools.Tools
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero,
                 small ? new Vector2(360f, 110f) : new Vector2(520f, 160f), Color.white);
             return go.GetComponent<Button>();
+        }
+
+        private static void DisableShadowsInScene(Scene scene)
+        {
+            foreach (var root in scene.GetRootGameObjects())
+            {
+                foreach (var r in root.GetComponentsInChildren<Renderer>(includeInactive: true))
+                {
+                    r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                    r.receiveShadows = false;
+                }
+            }
         }
 
         private static Scene OpenOrCreateScene()
@@ -450,15 +480,18 @@ namespace Project.EditorTools.Tools
             rect.anchorMin = Vector2.zero;
             rect.anchorMax = Vector2.one;
             rect.offsetMin = rect.offsetMax = Vector2.zero;
-            var tmp = textGO.AddComponent<TextMeshProUGUI>();
-            tmp.alignment = TextAlignmentOptions.Center;
-            tmp.fontSize = 64f;
-            tmp.fontStyle = TMPro.FontStyles.Bold;
-            tmp.color = new Color(0.55f, 1f, 0.55f, 1f);
-            tmp.text = "+0";
+            var ui = textGO.AddComponent<Text>();
+            ui.font = LegacyFont();
+            ui.alignment = TextAnchor.MiddleCenter;
+            ui.fontSize = 64;
+            ui.fontStyle = FontStyle.Bold;
+            ui.color = new Color(0.55f, 1f, 0.55f, 1f);
+            ui.text = "+0";
+            ui.horizontalOverflow = HorizontalWrapMode.Overflow;
+            ui.verticalOverflow = VerticalWrapMode.Overflow;
 
             var fn = go.GetComponent<FloatingNumber>();
-            SetField(fn, "_text", tmp);
+            SetField(fn, "_text", ui);
             SetField(fn, "_group", go.GetComponent<CanvasGroup>());
             return fn;
         }

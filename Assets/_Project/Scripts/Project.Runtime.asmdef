@@ -3,8 +3,7 @@
     "rootNamespace": "Project",
     "references": [
         "Project.Domain",
-        "Unity.TextMeshPro",
-        "UniTask"
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

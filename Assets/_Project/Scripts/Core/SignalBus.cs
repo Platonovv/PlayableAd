@@ -8,7 +8,7 @@ namespace Project.Core
     /// </summary>
     public sealed class SignalBus
     {
-        private readonly Dictionary<Type, Delegate> _handlers = new();
+        private readonly Dictionary<Type, Delegate> _handlers = new Dictionary<Type, Delegate>();
 
         public void Subscribe<T>(Action<T> handler) where T : struct
         {

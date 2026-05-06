@@ -74,6 +74,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 8298516055802294066, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
+    - {fileID: 4631867971556857632, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
     m_RemovedGameObjects:
     - {fileID: 8446918749446090829, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
     m_AddedGameObjects:
@@ -84,6 +85,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5338605145672543170, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
       insertIndex: -1
       addedObject: {fileID: 7131616522719221271}
+    - targetCorrespondingSourceObject: {fileID: 6679281758595870406, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2647996950190314982}
   m_SourcePrefab: {fileID: 100100000, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
 --- !u!95 &1826803765533654803 stripped
 Animator:
@@ -147,6 +151,45 @@ MonoBehaviour:
   _previewScale: 1.15
   _previewDuration: 0.12
   _animator: {fileID: 1826803765533654803}
+--- !u!1 &9035403854493494676 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6679281758595870406, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
+  m_PrefabInstance: {fileID: 2438031459162637138}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2647996950190314982
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9035403854493494676}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FontData:
+    m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
+    m_FontSize: 36
+    m_FontStyle: 1
+    m_BestFit: 0
+    m_MinSize: 10
+    m_MaxSize: 40
+    m_Alignment: 4
+    m_AlignByGeometry: 0
+    m_RichText: 1
+    m_HorizontalOverflow: 1
+    m_VerticalOverflow: 1
+    m_LineSpacing: 1
+  m_Text: 12
 --- !u!1001 &7228629976519120593
 PrefabInstance:
   m_ObjectHideFlags: 0

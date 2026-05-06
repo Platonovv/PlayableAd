@@ -4,13 +4,13 @@ namespace Project.Domain
 {
 	public readonly struct Power : IEquatable<Power>, IComparable<Power>
 	{
-		public static readonly Power Zero = new(0);
+		public static readonly Power Zero = new Power(0);
 
 		public int Value { get; }
 
 		public Power(int value) => Value = value < 0 ? 0 : value;
 
-		public static Power operator +(Power a, Power b) => new(a.Value + b.Value);
+		public static Power operator +(Power a, Power b) => new Power(a.Value + b.Value);
 		public static bool operator >=(Power a, Power b) => a.Value >= b.Value;
 		public static bool operator <=(Power a, Power b) => a.Value <= b.Value;
 		public static bool operator >(Power a, Power b) => a.Value > b.Value;

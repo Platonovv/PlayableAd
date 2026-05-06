@@ -1,5 +1,4 @@
 using System;
-using System.Threading;
 
 namespace Project.Domain
 {
@@ -11,7 +10,8 @@ namespace Project.Domain
 
         private UnitId(int value) => Value = value;
 
-        public static UnitId Next() => new(Interlocked.Increment(ref _counter));
+        // Single-threaded в playable, не нужен Interlocked.
+        public static UnitId Next() => new UnitId(++_counter);
 
         public bool Equals(UnitId other) => Value == other.Value;
         public override bool Equals(object obj) => obj is UnitId other && Equals(other);

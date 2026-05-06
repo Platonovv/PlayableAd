@@ -1,4 +1,3 @@
-using Cysharp.Threading.Tasks;
 using Project.Core;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -24,9 +23,9 @@ namespace Project.UI.Common
         }
 
         public void OnPointerDown(PointerEventData eventData)
-            => Tween.Scale(_rect, _origin * _pressedScale, _duration, Ease.OutQuad).Forget();
+            => StartCoroutine(Tween.Scale(_rect, _origin * _pressedScale, _duration, Ease.OutQuad));
 
         public void OnPointerUp(PointerEventData eventData)
-            => Tween.Scale(_rect, _origin, _duration, Ease.OutBack).Forget();
+            => StartCoroutine(Tween.Scale(_rect, _origin, _duration, Ease.OutBack));
     }
 }

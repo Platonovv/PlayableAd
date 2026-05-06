@@ -8,7 +8,7 @@ namespace Project.Gameplay.CameraFx
     public sealed class CameraFollow : MonoBehaviour
     {
         [SerializeField] private Transform _target;
-        [SerializeField] private Vector3 _offset = new(0f, 7f, -6f);
+        [SerializeField] private Vector3 _offset = new Vector3(0f, 7f, -6f);
         [SerializeField] private float _smoothTime = 0.35f;
         [SerializeField] private bool _followX = true;
         [SerializeField] private bool _followY = false;

@@ -2,21 +2,28 @@
 
 HTML5 playable: рыцарь выбирает цель, ориентируясь на числовую силу. Сначала сундук — апгрейд, потом враги. Победа = все враги уничтожены, после чего показывается end-card с CTA. Если игрок попытается ударить врага сильнее себя — погибает, появляется Lose-карточка с Retry.
 
-Целевая платформа: WebGL, portrait, ~5 MB, 60 FPS.
+Целевая платформа: WebGL, portrait, 60 FPS, бюджет ≤ 5 MB.
 
 ---
 
 ## Стек
 
-| Решение | Обоснование |
-|---|---|
-| **Unity 2022.3.62f2 LTS** | LTS-ветка с минимальным wasm под playable. Unity 6 даёт +2-3 MB к билду на пустом проекте — это выбор сознательный. |
-| **Built-in Render Pipeline** | URP в WebGL даёт +200–400 KB к wasm и десятки лишних shader variants. Сцена плоская — берём минимум. |
-| **UniTask** | Async-цепочки (move → attack → flair) без аллокаций. |
-| **Своя `Tween`** (UniTask + Ease curves) | DOTween не подключаем — экономия ~150 KB. Покрываем только нужные кривые (linear/outQuad/outBack/outSine). Все методы устойчивы к уничтожению цели во время анимации. |
-| **Без VContainer/Zenject** | Граф зависимостей маленький — `GameRoot` собирает его руками через `[SerializeField]`. Никаких singleton'ов и `Find`. |
-| **Без LeoEcsProto / DOTS** | Под core loop из 5–6 действий ECS — overengineering. Domain-модель — pure C# без UnityEngine. |
-| **Без Addressables** | Single-file билд, грузить нечего. |
+| Решение | Версия | Обоснование |
+|---|---|---|
+| **Unity** | 2022.3.62f2 LTS | LTS-ветка с минимальным wasm-следом под playable. Unity 6 на пустом проекте даёт +2-3 MB к билду — выбор сознательный. |
+| **C# language** | 9.0 (`<LangVersion>9.0`) | Records, target-typed `new`, pattern matching, `init`-сеттеры. Поддерживается Unity 2022.3 без отдельной настройки. C# 10/11 не используются ради совместимости с Mono-компилятором Unity и трансляцией Luna Playworks в JS. |
+| **API Compatibility** | .NET Standard 2.1 | Минимальный wasm-след. |
+| **Built-in Render Pipeline** | — | URP в WebGL даёт +200–400 KB к wasm и десятки лишних shader variants. Сцена плоская — берём минимум. |
+| **TextMeshPro** | 3.0.6 | UI-текст. |
+| **Unity Playworks Plugin (Luna)** | 7.2.0 | Пайплайн транспиляции C# → JS для финального playable-билда (single HTML, ≤5 MB). Подключён как `file:../../UnityPlug/scripts`. |
+| **Tween** (свой, на корутинах) | — | DOTween не подключаем — экономия ~150 KB. Покрываем нужные кривые (linear/outQuad/outBack/outSine). Все методы устойчивы к уничтожению цели во время анимации. |
+| **Без VContainer/Zenject** | — | Граф зависимостей маленький — `GameRoot` собирает его руками через `[SerializeField]`. Никаких singleton'ов и `Find`. |
+| **Без LeoEcsProto / DOTS** | — | Под core loop из 5–6 действий ECS — overengineering. Domain-модель — pure C# без UnityEngine. |
+| **Без Addressables** | — | Single-file билд, грузить нечего. |
+
+### Unity-модули, оставленные в `Packages/manifest.json`
+
+`animation`, `audio`, `jsonserialize`, `particlesystem`, `physics`, `ui`, `ugui`, `textmeshpro`. Всё лишнее (URP, VS, Timeline, AI Nav, Cloth, Terrain, Vehicles, XR, Tilemap, Multiplayer, AR, Postprocessing, Cinemachine, Test Framework, ImageConversion, IMGUI, UIElements, UnityWebRequest) удалено.
 
 ## Архитектура
 
@@ -66,47 +73,56 @@ Editor    → SceneBuilder, BuildPipeline, SingleFileInliner,
 4. **ChestOpenState** — игрок Victory-анимация во время открытия, +N летит, апгрейд (Upgrade-state + смена материала на gold + рандомный flair).
 5. **WonState/LostState** — терминальные, EndCard показывает соответствующую карточку (Win с CTA + Retry; Lose только с Retry).
 
-## Как собрать и запустить
+## Два билда
 
-### Локальный запуск из Editor
-1. Открыть проект в Unity 2022.3.62f2 (Unity Hub → Open).
+В проекте два независимых пайплайна сборки. Финальный deliverable — **Luna**.
+
+| Билд | Пайплайн | Размер | Назначение |
+|---|---|---|---|
+| **Unity stock WebGL** (single HTML) | `Playable → Build → WebGL → Build Single HTML` → склейка через `SingleFileInliner` | ≈ **11.7 MB** | Reference-билд. Чистый Unity WebGL c brotli, инлайн в один HTML. |
+| **Luna Playworks** | `Window → Luna → Publish` (плагин 7.2.0) | **< 5 MB** | Production deliverable. Luna транспилирует IL → JS, выкидывает wasm-runtime, упаковывает ассеты в один HTML с base64-данными. Вписывается в бюджет playable-сетей (AppLovin/IronSource/Mintegral/Vungle). |
+
+### Сборка Unity stock
+**`Playable → Build → WebGL → Build Single HTML`** — собирает оптимизированный WebGL-билд, склеивает его в один `Build/Playable/index.html` через `SingleFileInliner` и сразу открывает в дефолтном браузере по `file://`. Под капотом: brotli из Unity-сборки декомпрессится в C#, пережимается в gzip и инлайнится base64-ом. На рантайме браузер распаковывает через `DecompressionStream('gzip')` (нативный API, Chromium ≥80, Safari ≥16.4, Firefox ≥113).
+
+### Сборка Luna Playworks
+`Window → Luna → Publish` (или Develop для итераций). Плагин читает ту же сцену `Main.unity`, проходит свои стадии (`LunaTemp/stage1..stage4`) и кладёт финальный single-file HTML в указанный output.
+
+## Локальный запуск из Editor
+1. Открыть проект в Unity 2022.3.62f2 LTS (Unity Hub → Open).
 2. `Playable → Tools → Build Main Scene` — генерирует `Main.unity` со всей иерархией и SO-конфигами.
 3. Открыть `Assets/_Project/Scenes/Main.unity`.
-4. Перед Play подкрутить префабы (см. `SCENE_SETUP.md` если они ещё не настроены).
-5. Press Play.
+4. Press Play.
 
-### WebGL build & run
-- **`Playable → Build → WebGL → Build Single HTML`** — собирает оптимизированный WebGL-билд, склеивает его в один `Build/Playable/index.html` через `SingleFileInliner` и сразу открывает в дефолтном браузере по `file://`. Это и есть deliverable «один HTML-файл». Под капотом: brotli из Unity-сборки декомпрессится в C#, пережимается в gzip и инлайнится base64-ом. На рантайме браузер распаковывает через `DecompressionStream('gzip')` (нативный API, Chromium ≥80, Safari ≥16.4, Firefox ≥113).
-
-### Edit-time утилиты
+## Edit-time утилиты
 
 | Меню | Что делает |
 |---|---|
 | `Playable → Tools → Build Main Scene` | Собирает сцену в один клик: иерархия, компоненты, ссылки, дефолтные SO. |
 | `Playable → Tools → Build Size Audit` | Сканит все ассеты под `Assets/_Project/`, печатает неиспользуемые с размерами, предлагает удалить. |
 | `Playable → Tools → Auto Fill Material Textures` | Прогоняет материалы под `Art/`, заполняет пустые `_MainTex` по совпадению имён, фиксит URP-шейдеры. |
-| `Playable → Tools → Fix Pink Materials` | То же, но более агрессивно — переводит URP/HDRP-шейдеры на `Mobile/Diffuse`. |
+| `Playable → Tools → Fix Pink Materials` | Более агрессивно — переводит URP/HDRP-шейдеры на `Mobile/Diffuse`. |
 | `Playable → Tools → Sync Avatars in Selection` | Для Generic-rig'ов: первый выделенный FBX становится «мастером» Avatar, остальные копируют. Без этого animation-clips из разных FBX не играют на одном меше. |
 | `Playable → Build → Configure Player Only` | Применяет настройки Player без сборки. |
+| `Window → Luna → ...` | Меню Playworks: Develop / Publish / Settings. |
 
 ## Применённые оптимизации размера
 
 | Источник | Что сделано |
 |---|---|
 | **Unity package set** | Удалены URP, Visual Scripting, Timeline, AI Navigation, Cloth, Terrain, Vehicles, XR/VR, Tilemap, Multiplayer, AR, Postprocessing, Cinemachine, Test Framework, ImageConversion, IMGUI, UIElements, UnityWebRequest. |
-| **IL2CPP** | `Code Optimization = Master`, `Code Generation = OptimizeSize`, `Managed Stripping = High`, `Exception Support = None`. |
-| **WebGL** | `Brotli`, `Memory = 64 MB`, `linkerTarget = Wasm`, `dataCaching = false`, `threadsSupport = false`. |
+| **IL2CPP / WebGL Player** | `Code Optimization = Master`, `Code Generation = OptimizeSize`, `Exception Support = None`, `Compression = Brotli`, `Memory = 64 MB`, `linkerTarget = Wasm`, `dataCaching = false`, `threadsSupport = false`. |
 | **Color space** | Gamma — экономия shader variants. |
 | **Render** | Built-in RP, без shadows, без AA, без anisotropic, без realtime reflections. `gpuSkinning = false`. |
 | **3D-ассеты** | Низкополигональные skinned meshes с unlit-материалами (Mobile/Diffuse). Текстуры — `RGBA Crunched`, q=50, max 512 px. |
 | **VFX** | `SequenceTexturePostprocessor` авто-настраивает PNG-секвенции в `/Art/Sequences/` и `/Art/FX/`: max 512 px, crunch q=50. |
 | **Audio** | mono, 22050 Hz, Vorbis q=2 (sfx) / q=3 (music). 4.1 MB исходников → 103 KB после конвертации. |
-| **BG** | Процедурно генерируется через `_make_bg.py` — простой gradient + tree silhouettes + dock + waves. ~50 KB JPG. |
-| **Tests removed** | Из проекта вырезаны юнит-тесты и test-framework пакет. |
+| **BG** | Процедурно генерируется через `_make_bg.py` (gradient + tree silhouettes + dock + waves). ~50 KB JPG. |
+| **Tests removed** | Юнит-тесты и test-framework пакет вырезаны из проекта. |
 
-## Single-file inline — как это работает
+## Single-file inline (stock-билд)
 
-`SingleFileInliner` склеивает loader/framework/wasm/data в один `Build/Playable/index.html`. Проблема Unity 2022.3 brotli (loader детектит компрессию по расширению URL, а `data:` URI расширения не имеет) обходится так:
+`SingleFileInliner` склеивает loader/framework/wasm/data в один `Build/Playable/index.html`:
 
 1. Brotli-файлы из `Build/WebGL/Build/` декомпрессируются в C# (`System.IO.Compression.BrotliStream`).
 2. Пережимаются в gzip (`GZipStream`, Optimal).
@@ -114,7 +130,7 @@ Editor    → SceneBuilder, BuildPipeline, SingleFileInliner,
 4. На рантайме helper в `<script>` распаковывает их через `new DecompressionStream('gzip')` — нативный браузерный API (Chromium ≥80, Safari ≥16.4, Firefox ≥113), без js-полифилов.
 5. Получившиеся `Blob` оборачиваются в `URL.createObjectURL`, эти blob-URL подменяют `dataUrl/frameworkUrl/codeUrl` в config'е перед `createUnityInstance`.
 
-Размер итогового HTML ≈ brotli × (gzip/brotli ≈ 1.05–1.10) × base64 (1.33). На наших ассетах укладываемся в 5 MB. Альтернативный deliverable — папка `Build/WebGL/` через zip-пакет (стандарт для AppLovin/Vungle/IronSource).
+Размер итогового HTML ≈ brotli × (gzip/brotli ≈ 1.05–1.10) × base64 (1.33). Финальные 5 MB достигаются через Luna.
 
 ## Что бы улучшил при наличии времени
 

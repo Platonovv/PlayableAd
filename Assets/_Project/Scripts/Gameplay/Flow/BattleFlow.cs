@@ -23,9 +23,9 @@ namespace Project.Gameplay.Flow
 		[SerializeField] private ScreenShake _shake;
 		[SerializeField] private FloatingNumber _floatingNumberPrefab;
 		[SerializeField] private Transform _floatingNumbersRoot;
-		[SerializeField] private Color _enemyArrowColor    = new(0.95f, 0.25f, 0.25f, 1f);
-		[SerializeField] private Color _winnableArrowColor = new(0.25f, 0.55f, 1f,    1f);
-		[SerializeField] private Color _chestArrowColor    = new(0.30f, 0.85f, 0.35f, 1f);
+		[SerializeField] private Color _enemyArrowColor = new Color(0.95f, 0.25f, 0.25f, 1f);
+		[SerializeField] private Color _winnableArrowColor = new Color(0.25f, 0.55f, 1f,    1f);
+		[SerializeField] private Color _chestArrowColor = new Color(0.30f, 0.85f, 0.35f, 1f);
 
 		private BattleFlowContext _ctx;
 		private StateMachine<BattleFlowContext> _fsm;

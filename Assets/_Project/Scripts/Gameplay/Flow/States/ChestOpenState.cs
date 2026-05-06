@@ -1,5 +1,4 @@
-using System.Threading;
-using Cysharp.Threading.Tasks;
+using System.Collections;
 using Project.Core;
 using Project.Domain.Actions;
 using Project.Domain.States;
@@ -14,24 +13,30 @@ namespace Project.Gameplay.Flow.States
     public sealed class ChestOpenState : IState<BattleFlowContext>
     {
         private readonly BattleFlow _flow;
-        private CancellationTokenSource _cts;
+        private Coroutine _co;
+        private Coroutine _landedCo;
+        private Coroutine _swordCo;
 
         public ChestOpenState(BattleFlow flow) => _flow = flow;
 
         public void Enter(BattleFlowContext ctx)
         {
-            _cts = new CancellationTokenSource();
-            _ = Run(ctx, _cts.Token);
+            _co = _flow.StartCoroutine(Run(ctx));
         }
 
-        public void Exit(BattleFlowContext ctx) => _cts?.Cancel();
-
-        private async UniTask Run(BattleFlowContext ctx, CancellationToken ct)
+        public void Exit(BattleFlowContext ctx)
         {
-            if (!ctx.Views.TryGetValue(ctx.PendingTarget, out var view) || view is not ChestView chest)
+            if (_co != null)      { _flow.StopCoroutine(_co); _co = null; }
+            if (_landedCo != null) { _flow.StopCoroutine(_landedCo); _landedCo = null; }
+            if (_swordCo != null)  { _flow.StopCoroutine(_swordCo); _swordCo = null; }
+        }
+
+        private IEnumerator Run(BattleFlowContext ctx)
+        {
+            if (!ctx.Views.TryGetValue(ctx.PendingTarget, out var view) || !(view is ChestView chest))
             {
                 _flow.GoIdle();
-                return;
+                yield break;
             }
 
             var gain = chest.Unit.Power.Value;
@@ -47,74 +52,71 @@ namespace Project.Gameplay.Flow.States
                     : ctx.Player.Anchor;
                 if (chest.PowerLabel != null) chest.PowerLabel.SetVisible(false);
                 number.PlayFlying("+" + gain, startPos, targetTransform,
-                    ctx.Balance.FloatingNumberDuration, ctx.Numbers, ct).Forget();
+                    ctx.Balance.FloatingNumberDuration, ctx.Numbers);
             }
 
             ctx.Vfx.Play("chest_open", chest.Vfx.position);
 
             ctx.Player.PlayVictory();
 
-            var openTask = chest.PlayOpen(ct);
-            var swordTask = FlySwordFromChest(chest.Vfx.position, ctx.Player, ct);
+            // Открытие сундука + полёт меча идут параллельно
+            _swordCo = _flow.StartCoroutine(FlySwordFromChest(chest.Vfx.position, ctx.Player));
+            _landedCo = _flow.StartCoroutine(NumberLanded(ctx));
 
-            UniTask.Delay(System.TimeSpan.FromSeconds(ctx.Balance.FloatingNumberDuration), cancellationToken: ct)
-                .ContinueWith(() =>
-                {
-                    if (ct.IsCancellationRequested) return;
-                    ctx.Player.RefreshPower();
-                    if (ctx.Player.PowerLabel != null) ctx.Player.PowerLabel.Pop();
-                    ctx.Vfx.Play("power_gain", ctx.Player.Vfx.position);
-                    ctx.Signals.Fire(new PlayerPowerChangedSignal(ctx.Battle.Player.Power.Value));
-                    ctx.Player.PlayPowerGain(ct).Forget();
-                }).Forget();
-
-            await UniTask.WhenAll(openTask, swordTask);
+            // Ждём открытие сундука
+            yield return chest.PlayOpen();
+            // Ждём завершение полёта меча
+            while (_swordCo != null) yield return null;
 
             ctx.Vfx.Play("upgrade", ctx.Player.Vfx.position);
-            await ctx.Player.PlayUpgrade(ct);
+            yield return ctx.Player.PlayUpgrade();
             ctx.Player.PlayIdle();
 
+            _co = null;
             _flow.GoIdle();
         }
 
-        private async UniTask FlySwordFromChest(Vector3 from, PlayerView player, CancellationToken ct)
+        private IEnumerator NumberLanded(BattleFlowContext ctx)
         {
+            yield return new WaitForSeconds(ctx.Balance.FloatingNumberDuration);
+            ctx.Player.RefreshPower();
+            if (ctx.Player.PowerLabel != null) ctx.Player.PowerLabel.Pop();
+            ctx.Vfx.Play("power_gain", ctx.Player.Vfx.position);
+            ctx.Signals.Fire(new PlayerPowerChangedSignal(ctx.Battle.Player.Power.Value));
+            ctx.Player.PlayPowerGain();
+            _landedCo = null;
+        }
+
+        private IEnumerator FlySwordFromChest(Vector3 from, PlayerView player)
+        {
+            var sword = player.Sword;
+            if (sword == null) { _swordCo = null; yield break; }
+
             var to = player.SwordTarget;
             const float duration = 0.6f;
             const float arcHeight = 2.5f;
-            var swordSize = new Vector3(0.12f, 0.12f, 0.9f);
+            var direction = (to - from).sqrMagnitude > 0.0001f
+                ? (to - from).normalized
+                : Vector3.forward;
 
-            var ghost = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            ghost.name = "FlyingSword";
-            if (ghost.TryGetComponent(out Collider col)) Object.Destroy(col);
-
-            var t = ghost.transform;
-            t.position = from;
-            t.localScale = swordSize;
-
-            var renderer = ghost.GetComponent<MeshRenderer>();
-            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            renderer.receiveShadows = false;
-            var mat = new Material(Shader.Find("Mobile/Diffuse")) { color = new Color(1f, 0.82f, 0.2f) };
-            renderer.sharedMaterial = mat;
+            player.DetachSwordTo(from);
 
             var elapsed = 0f;
-            while (elapsed < duration && ghost != null && !ct.IsCancellationRequested)
+            while (elapsed < duration && sword != null)
             {
                 elapsed += Time.deltaTime;
                 var k = Mathf.Clamp01(elapsed / duration);
                 var eased = Ease.InOutQuad(k);
                 var pos = Vector3.Lerp(from, to, eased);
                 pos.y += Mathf.Sin(k * Mathf.PI) * arcHeight;
-                t.position = pos;
-
-                t.rotation = Quaternion.Euler(0f, 0f, k * 1080f) *
-                             Quaternion.LookRotation((to - from).normalized, Vector3.up);
-                await UniTask.Yield(PlayerLoopTiming.Update, ct).SuppressCancellationThrow();
+                sword.position = pos;
+                sword.rotation = Quaternion.Euler(0f, 0f, k * 1080f) *
+                                 Quaternion.LookRotation(direction, Vector3.up);
+                yield return null;
             }
 
-            if (ghost != null) Object.Destroy(ghost);
-            if (mat != null) Object.Destroy(mat);
+            player.ReattachSword();
+            _swordCo = null;
         }
     }
 }

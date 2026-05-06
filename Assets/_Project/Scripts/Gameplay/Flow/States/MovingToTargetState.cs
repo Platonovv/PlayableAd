@@ -1,5 +1,4 @@
-using System.Threading;
-using Cysharp.Threading.Tasks;
+using System.Collections;
 using Project.Domain.States;
 
 namespace Project.Gameplay.Flow.States
@@ -10,30 +9,33 @@ namespace Project.Gameplay.Flow.States
 	public sealed class MovingToTargetState : IState<BattleFlowContext>
 	{
 		private readonly BattleFlow _flow;
-		private CancellationTokenSource _cts;
+		private UnityEngine.Coroutine _co;
 
 		public MovingToTargetState(BattleFlow flow) => _flow = flow;
 
 		public void Enter(BattleFlowContext ctx)
 		{
-			_cts = new CancellationTokenSource();
-			_ = Run(ctx, _cts.Token);
+			_co = _flow.StartCoroutine(Run(ctx));
 		}
 
-		public void Exit(BattleFlowContext ctx) => _cts?.Cancel();
+		public void Exit(BattleFlowContext ctx)
+		{
+			if (_co != null) { _flow.StopCoroutine(_co); _co = null; }
+		}
 
-		private async UniTask Run(BattleFlowContext ctx, CancellationToken ct)
+		private IEnumerator Run(BattleFlowContext ctx)
 		{
 			if (!ctx.Views.TryGetValue(ctx.PendingTarget, out var view))
 			{
 				_flow.GoIdle();
-				return;
+				yield break;
 			}
 
 			ctx.Indicator.Show(ctx.Player.transform, view.Stop, ctx.ColorFor(view));
-			await ctx.Player.MoveTo(view.Stop.position, ct);
+			yield return ctx.Player.MoveTo(view.Stop.position);
 			ctx.Indicator.Hide();
 
+			_co = null;
 			switch (view.Kind)
 			{
 				case Domain.UnitKind.Chest:

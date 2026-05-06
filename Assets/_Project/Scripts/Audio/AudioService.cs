@@ -49,10 +49,20 @@ namespace Project.Audio
 
 		public void SetPaused(bool paused)
 		{
-			if (paused)
-				AudioListener.pause = true;
-			else
-				AudioListener.pause = false;
+			if (_music != null)
+			{
+				if (paused) _music.Pause();
+				else        _music.UnPause();
+			}
+			if (_sfxPool != null)
+			{
+				for (var i = 0; i < _sfxPool.Length; i++)
+				{
+					if (_sfxPool[i] == null) continue;
+					if (paused) _sfxPool[i].Pause();
+					else        _sfxPool[i].UnPause();
+				}
+			}
 		}
 
 		private void Play(string key)

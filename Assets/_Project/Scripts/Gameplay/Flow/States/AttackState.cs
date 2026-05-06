@@ -1,10 +1,10 @@
-using System.Threading;
-using Cysharp.Threading.Tasks;
+using System.Collections;
 using Project.Core;
 using Project.Domain;
 using Project.Domain.Actions;
 using Project.Domain.States;
 using Project.Gameplay.Units;
+using UnityEngine;
 
 namespace Project.Gameplay.Flow.States
 {
@@ -14,28 +14,30 @@ namespace Project.Gameplay.Flow.States
 	public sealed class AttackState : IState<BattleFlowContext>
 	{
 		private readonly BattleFlow _flow;
-		private CancellationTokenSource _cts;
+		private Coroutine _co;
+		private Coroutine _refreshCo;
 
 		public AttackState(BattleFlow flow) => _flow = flow;
 
 		public void Enter(BattleFlowContext ctx)
 		{
-			_cts = new CancellationTokenSource();
-			_ = Run(ctx, _cts.Token);
+			_co = _flow.StartCoroutine(Run(ctx));
 		}
 
-		public void Exit(BattleFlowContext ctx) => _cts?.Cancel();
-
-		private async UniTask Run(BattleFlowContext ctx, CancellationToken ct)
+		public void Exit(BattleFlowContext ctx)
 		{
-			if (!ctx.Views.TryGetValue(ctx.PendingTarget, out var view) || view is not EnemyView enemy)
+			if (_co != null) { _flow.StopCoroutine(_co); _co = null; }
+			if (_refreshCo != null) { _flow.StopCoroutine(_refreshCo); _refreshCo = null; }
+		}
+
+		private IEnumerator Run(BattleFlowContext ctx)
+		{
+			if (!ctx.Views.TryGetValue(ctx.PendingTarget, out var view) || !(view is EnemyView enemy))
 			{
 				_flow.GoIdle();
-				return;
+				yield break;
 			}
 
-			var enemyOrigin = ctx.Player.transform.position;
-			var preAttackPower = ctx.Battle.Player.Power.Value;
 			var enemyPower = enemy.Unit.Power.Value;
 			var willWin = ctx.Battle.Player.Power >= enemy.Unit.Power;
 
@@ -44,7 +46,7 @@ namespace Project.Gameplay.Flow.States
 			if (willWin)
 			{
 				var useSuper = ctx.Battle.Player.Power.Value >= ctx.Balance.SuperAttackThreshold;
-				await (useSuper ? ctx.Player.PlaySuperAttack(ct) : ctx.Player.PlayAttack(ct));
+				yield return useSuper ? ctx.Player.PlaySuperAttack() : ctx.Player.PlayAttack();
 				ctx.Battle.Apply(new AttackAction(enemy.Id));
 
 				enemy.PlayHit();
@@ -67,20 +69,18 @@ namespace Project.Gameplay.Flow.States
 					                  startPos,
 					                  targetTransform,
 					                  ctx.Balance.FloatingNumberDuration,
-					                  ctx.Numbers,
-					                  ct)
-					      .Forget();
+					                  ctx.Numbers);
 				}
 
-				await UniTask.Delay(System.TimeSpan.FromSeconds(ctx.Balance.HitReactionDelay), cancellationToken: ct);
+				yield return new WaitForSeconds(ctx.Balance.HitReactionDelay);
 
 				ctx.Player.PlayIdle();
 
 				ctx.Vfx.Play("death", enemy.Vfx.position);
-				var refreshTask = RefreshPlayerOnNumberLand(ctx, ct);
-				await enemy.PlayDeath(ct);
-				await refreshTask;
+				_refreshCo = _flow.StartCoroutine(RefreshPlayerOnNumberLand(ctx));
+				yield return enemy.PlayDeath();
 
+				_co = null;
 				if (ctx.Battle.IsOver)
 					_flow.GoWon();
 				else
@@ -90,30 +90,29 @@ namespace Project.Gameplay.Flow.States
 			{
 				ctx.Signals.Fire(new AttackFailedSignal(ctx.Battle.Player.Id, enemy.Id));
 
-				await enemy.PlayAttack(ct);
+				yield return enemy.PlayAttack();
 
 				ctx.Player.PlayHurt();
 				ctx.Vfx.Play("block", ctx.Player.Vfx.position);
 				ctx.Shake.Shake(ctx.Balance.HitShakeAmplitude, ctx.Balance.HitShakeDuration);
 
-				await UniTask.Delay(System.TimeSpan.FromSeconds(ctx.Balance.HitReactionDelay), cancellationToken: ct);
-				await ctx.Player.PlayDeath(ct);
+				yield return new WaitForSeconds(ctx.Balance.HitReactionDelay);
+				yield return ctx.Player.PlayDeath();
+				_co = null;
 				_flow.GoLost();
 			}
-
-			_ = preAttackPower;
 		}
 
-		private async UniTask RefreshPlayerOnNumberLand(BattleFlowContext ctx, CancellationToken ct)
+		private IEnumerator RefreshPlayerOnNumberLand(BattleFlowContext ctx)
 		{
-			await UniTask.Delay(System.TimeSpan.FromSeconds(ctx.Balance.FloatingNumberDuration),
-			                    cancellationToken: ct);
+			yield return new WaitForSeconds(ctx.Balance.FloatingNumberDuration);
 			ctx.Player.RefreshPower();
 			if (ctx.Player.PowerLabel != null)
 				ctx.Player.PowerLabel.Pop();
 			ctx.Vfx.Play("power_gain", ctx.Player.Vfx.position);
 			ctx.Signals.Fire(new PlayerPowerChangedSignal(ctx.Battle.Player.Power.Value));
-			ctx.Player.PlayPowerGain(ct).Forget();
+			ctx.Player.PlayPowerGain();
+			_refreshCo = null;
 		}
 	}
 }

@@ -1,5 +1,4 @@
-using System.Threading;
-using Cysharp.Threading.Tasks;
+using System.Collections;
 using Project.Configs;
 using Project.Core;
 using UnityEngine;
@@ -11,45 +10,40 @@ namespace Project.Gameplay.Units
 	/// </summary>
 	public sealed class EnemyView : UnitView
 	{
-		private static readonly int IdleHash = Animator.StringToHash("Idle");
-		private static readonly int HitHash = Animator.StringToHash("Hit");
-		private static readonly int AttackHash = Animator.StringToHash("Attack");
-		private static readonly int DeathHash = Animator.StringToHash("Death");
-
 		[SerializeField] private Animator _animator;
 
 		private BalanceConfig _balance;
 
 		public void Configure(BalanceConfig balance) => _balance = balance;
 
-		public async UniTask PlayDeath(CancellationToken ct)
+		protected override void Awake()
 		{
+			base.Awake();
 			if (_animator != null)
-				_animator.CrossFadeInFixedTime(DeathHash, 0.05f);
-
-			await UniTask.Delay(System.TimeSpan.FromSeconds(_balance.DeathAnimDuration), cancellationToken: ct);
-			await Tween.Scale(transform, Vector3.zero, _balance.DeathFadeDuration, Ease.InQuad, ct);
-			gameObject.SetActive(false);
+			{
+				_animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+				_animator.applyRootMotion = false;
+			}
 		}
 
-		public void PlayHit()
+		public IEnumerator PlayDeath()
 		{
-			if (_animator != null)
-				_animator.CrossFadeInFixedTime(HitHash, 0.05f);
+			Cross("Death");
+			yield return new WaitForSeconds(_balance.DeathAnimDuration);
+			yield return Tween.Scale(transform, Vector3.zero, _balance.DeathFadeDuration, Ease.InQuad);
+			if (this != null) gameObject.SetActive(false);
 		}
 
-		public async UniTask PlayAttack(CancellationToken ct)
+		public void PlayHit() => Cross("Hit");
+
+		public IEnumerator PlayAttack()
 		{
-			if (_animator != null)
-				_animator.CrossFadeInFixedTime(AttackHash, 0.05f);
-			await UniTask.Delay(System.TimeSpan.FromSeconds(_balance.AttackWindup + _balance.AttackImpactDelay),
-			                    cancellationToken: ct);
+			Cross("Attack");
+			yield return new WaitForSeconds(_balance.AttackWindup + _balance.AttackImpactDelay);
 		}
 
-		public void PlayIdle()
-		{
-			if (_animator != null)
-				_animator.CrossFadeInFixedTime(IdleHash, 0.05f);
-		}
+		public void PlayIdle() => Cross("Idle");
+
+		private void Cross(string state) => PlayAnim(state);
 	}
 }

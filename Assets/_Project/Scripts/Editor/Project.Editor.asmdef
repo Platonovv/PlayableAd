@@ -4,8 +4,7 @@
     "references": [
         "Project.Domain",
         "Project.Runtime",
-        "Unity.TextMeshPro",
-        "UniTask"
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [
         "Editor"

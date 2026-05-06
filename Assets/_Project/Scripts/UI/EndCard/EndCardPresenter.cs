@@ -1,4 +1,3 @@
-using Cysharp.Threading.Tasks;
 using Project.Core;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -12,8 +11,8 @@ namespace Project.UI.EndCard
     {
         [SerializeField] private GameRoot _root;
         [SerializeField] private EndCardView _view;
-        [SerializeField] private string _winTitle  = "Победа!";
-        [SerializeField] private string _loseTitle = "Поражение";
+        [SerializeField] private string _winTitle  = "YOU WIN!";
+        [SerializeField] private string _loseTitle = "GAME OVER";
 
         private SignalBus _signals;
 
@@ -44,13 +43,13 @@ namespace Project.UI.EndCard
         private void OnWon(BattleWonSignal signal)
         {
             var delay = _root.Balance.EndCardDelay;
-            _view.Show(_winTitle, delay, showCta: true, destroyCancellationToken).Forget();
+            _view.Show(_winTitle, delay, showCta: true);
         }
 
         private void OnLost(BattleLostSignal signal)
         {
             var delay = _root.Balance.EndCardDelay;
-            _view.Show(_loseTitle, delay, showCta: false, destroyCancellationToken).Forget();
+            _view.Show(_loseTitle, delay, showCta: false);
         }
 
         private void OnCta() => _signals.Fire(new CtaClickedSignal());

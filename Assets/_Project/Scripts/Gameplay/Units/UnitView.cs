@@ -1,8 +1,9 @@
-using Cysharp.Threading.Tasks;
+using System.Collections.Generic;
 using Project.Core;
 using Project.Domain;
 using Project.Gameplay.Targeting;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Project.Gameplay.Units
 {
@@ -16,6 +17,7 @@ namespace Project.Gameplay.Units
 		[SerializeField] protected Transform AnchorPoint;
 		[SerializeField] protected Transform VfxPoint;
 		[SerializeField] protected GameObject HighlightRing;
+		[SerializeField] protected Animator AnimatorRef;
 
 		[SerializeField] protected GameObject WarningRing;
 		[SerializeField] private float _previewScale = 1.15f;
@@ -36,7 +38,9 @@ namespace Project.Gameplay.Units
 		{
 			var localUp = transform.up;
 			var dir = Vector3.ProjectOnPlane(worldPosition - transform.position, localUp);
-			if (dir.sqrMagnitude < 0.0001f) return;
+			if (dir.sqrMagnitude < 0.0001f)
+				return;
+
 			transform.rotation = Quaternion.LookRotation(dir, localUp);
 		}
 
@@ -44,9 +48,27 @@ namespace Project.Gameplay.Units
 		{
 			_baseScale = transform.localScale;
 			_baseScaleCached = true;
+
+			// Luna стрипает SHADOWCASTER variant у Mobile/Diffuse → отключаем тени на рантайме.
+			foreach (var r in GetComponentsInChildren<Renderer>(includeInactive: true))
+			{
+				r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+				r.receiveShadows = false;
+			}
+
+			if (AnimatorRef == null)
+				AnimatorRef = GetComponentInChildren<Animator>();
 		}
 
-		public virtual void Bind(Unit unit, Camera camera)
+		// Прямой Animator API: в Editor работает безусловно, в Playworks — с ограничениями
+		// (state-machine тикает, но bones-transforms могут не применяться — это known limit плагина).
+		public void PlayAnim(string state)
+		{
+			if (AnimatorRef != null)
+				AnimatorRef.Play(state);
+		}
+
+public virtual void Bind(Unit unit, Camera camera)
 		{
 			Unit = unit;
 			if (!_baseScaleCached)
@@ -65,6 +87,14 @@ namespace Project.Gameplay.Units
 				HighlightRing.SetActive(false);
 			if (WarningRing != null)
 				WarningRing.SetActive(false);
+
+			// Playworks плохо рендерит WorldSpace Canvas без явно назначенной camera.
+			foreach (var canvas in GetComponentsInChildren<Canvas>(includeInactive: true))
+			{
+				if (canvas.renderMode == RenderMode.WorldSpace && canvas.worldCamera == null)
+					canvas.worldCamera = camera;
+			}
+
 		}
 
 		public virtual void RefreshPower()
@@ -106,7 +136,7 @@ namespace Project.Gameplay.Units
 			}
 
 			var target = value ? _baseScale * _previewScale : _baseScale;
-			Tween.Scale(transform, target, _previewDuration, Ease.OutBack).Forget();
+			StartCoroutine(Tween.Scale(transform, target, _previewDuration, Ease.OutBack));
 		}
 	}
 }

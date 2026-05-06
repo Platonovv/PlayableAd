@@ -70,6 +70,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 8298516055802294066, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
+    - {fileID: 4631867971556857632, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
     m_RemovedGameObjects:
     - {fileID: 8446918749446090829, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
     m_AddedGameObjects:
@@ -80,6 +81,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5338605145672543170, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1662859842060410750}
+    - targetCorrespondingSourceObject: {fileID: 6679281758595870406, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8491875072812354377}
   m_SourcePrefab: {fileID: 100100000, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
 --- !u!114 &141815668863568799 stripped
 MonoBehaviour:
@@ -131,6 +135,45 @@ MonoBehaviour:
   _openVfx: {fileID: 0}
   _idleBobAmplitude: 0.05
   _idleBobSpeed: 2
+--- !u!1 &6184505835552655381 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6679281758595870406, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}
+  m_PrefabInstance: {fileID: 676195341630449363}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &8491875072812354377
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6184505835552655381}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FontData:
+    m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
+    m_FontSize: 36
+    m_FontStyle: 1
+    m_BestFit: 0
+    m_MinSize: 10
+    m_MaxSize: 40
+    m_Alignment: 4
+    m_AlignByGeometry: 0
+    m_RichText: 1
+    m_HorizontalOverflow: 1
+    m_VerticalOverflow: 1
+    m_LineSpacing: 1
+  m_Text: 12
 --- !u!4 &8156440772125099454 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8670321803848033133, guid: b768a490c056e1c4ba5bdb4f80dfbdff, type: 3}

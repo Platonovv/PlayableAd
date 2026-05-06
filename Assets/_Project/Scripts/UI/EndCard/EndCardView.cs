@@ -1,8 +1,6 @@
 using System;
-using System.Threading;
-using Cysharp.Threading.Tasks;
+using System.Collections;
 using Project.Core;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -16,10 +14,12 @@ namespace Project.UI.EndCard
         [SerializeField] private CanvasGroup _group;
         [SerializeField] private Button _ctaButton;
         [SerializeField] private Button _retryButton;
-        [SerializeField] private TMP_Text _title;
+        [SerializeField] private Text _title;
 
         public event Action CtaClicked;
         public event Action RetryClicked;
+
+        private Coroutine _co;
 
         private void Awake()
         {
@@ -29,18 +29,28 @@ namespace Project.UI.EndCard
             if (_retryButton != null) _retryButton.onClick.AddListener(() => RetryClicked?.Invoke());
         }
 
-        public async UniTask Show(string title, float delay, bool showCta, CancellationToken ct)
+        public void Show(string title, float delay, bool showCta)
         {
             _title.text = title;
             if (_ctaButton != null) _ctaButton.gameObject.SetActive(showCta);
             if (_retryButton != null) _retryButton.gameObject.SetActive(true);
-            await UniTask.Delay(TimeSpan.FromSeconds(delay), cancellationToken: ct);
+
+            if (_co != null) StopCoroutine(_co);
+            _co = StartCoroutine(ShowRoutine(delay));
+        }
+
+        private IEnumerator ShowRoutine(float delay)
+        {
+            yield return new WaitForSeconds(delay);
             _group.blocksRaycasts = true;
-            await Tween.Fade(_group, 1f, 0.35f, ct);
+            // Сразу alpha=1 без Tween — на случай если Playworks стрипает CanvasGroup.alpha setter.
+            _group.alpha = 1f;
+            _co = null;
         }
 
         public void Hide()
         {
+            if (_co != null) { StopCoroutine(_co); _co = null; }
             _group.alpha = 0f;
             _group.blocksRaycasts = false;
         }

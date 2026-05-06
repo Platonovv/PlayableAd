@@ -1,5 +1,4 @@
-using System.Threading;
-using Cysharp.Threading.Tasks;
+using System.Collections;
 using Project.Configs;
 using Project.Core;
 using UnityEngine;
@@ -11,21 +10,35 @@ namespace Project.Gameplay.Units
 	/// </summary>
 	public sealed class PlayerView : UnitView
 	{
-		private static readonly int IdleHash = Animator.StringToHash("Idle");
-		private static readonly int RunHash = Animator.StringToHash("Run");
-		private static readonly int AttackHash = Animator.StringToHash("Attack");
-		private static readonly int HitHash = Animator.StringToHash("Hit");
-		private static readonly int DeathHash = Animator.StringToHash("Death");
-		private static readonly int VictoryHash = Animator.StringToHash("Victory");
-		private static readonly int UpgradeHash = Animator.StringToHash("Upgrade");
-		private static readonly int SuperAttackHash = Animator.StringToHash("SuperAttack");
+		private const string IdleHash = "Idle";
+		private const string RunHash = "Run";
+		private const string AttackHash = "Attack";
+		private const string HitHash = "Hit";
+		private const string DeathHash = "Death";
+		private const string VictoryHash = "Victory";
+		private const string UpgradeHash = "Upgrade";
+		private const string SuperAttackHash = "SuperAttack";
 
 		[SerializeField] private Animator _animator;
 		[SerializeField] private Transform _sword;
 
 		private BalanceConfig _balance;
 
-		public Vector3 SwordTarget => _sword != null ? _sword.position : Anchor.position;
+		private Transform _swordOriginalParent;
+		private Vector3 _swordOriginalLocalPos;
+		private Quaternion _swordOriginalLocalRot;
+		private Vector3 _swordOriginalLocalScale;
+
+		private Vector3 _flairBaseScale = Vector3.one;
+		private float _flairBaseY;
+		private Coroutine _flairCo;
+
+		public Transform Sword => _sword;
+
+		public Vector3 SwordTarget =>
+			_swordOriginalParent != null
+				? _swordOriginalParent.TransformPoint(_swordOriginalLocalPos)
+				: _sword != null ? _sword.position : Anchor.position;
 
 		public void Configure(BalanceConfig balance) => _balance = balance;
 
@@ -33,71 +46,100 @@ namespace Project.Gameplay.Units
 		{
 			base.Awake();
 			if (_sword != null)
+			{
+				_swordOriginalParent = _sword.parent;
+				_swordOriginalLocalPos = _sword.localPosition;
+				_swordOriginalLocalRot = _sword.localRotation;
+				_swordOriginalLocalScale = _sword.localScale.sqrMagnitude > 0.0001f ? _sword.localScale : Vector3.one;
 				_sword.localScale = Vector3.zero;
+			}
 			if (_animator != null)
+			{
 				_animator.applyRootMotion = false;
+				_animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+			}
+
+			_flairBaseScale = transform.localScale;
 		}
 
-		public async UniTask MoveTo(Vector3 destination, CancellationToken ct)
+		public override void Bind(Project.Domain.Unit unit, Camera camera)
+		{
+			base.Bind(unit, camera);
+			_flairBaseY = transform.position.y;
+		}
+
+		public void DetachSwordTo(Vector3 worldPos)
+		{
+			if (_sword == null) return;
+			_sword.SetParent(null, false);
+			_sword.position = worldPos;
+			_sword.localScale = _swordOriginalLocalScale;
+		}
+
+		public void ReattachSword()
+		{
+			if (_sword == null || _swordOriginalParent == null) return;
+			_sword.SetParent(_swordOriginalParent, false);
+			_sword.localPosition = _swordOriginalLocalPos;
+			_sword.localRotation = _swordOriginalLocalRot;
+			_sword.localScale = _swordOriginalLocalScale;
+		}
+
+		public IEnumerator MoveTo(Vector3 destination)
 		{
 			destination.y = transform.position.y;
 
 			PlayState(RunHash);
 			FaceTowards(destination);
 			var stopSqr = _balance.StopDistance * _balance.StopDistance;
-			while ((transform.position - destination).sqrMagnitude > stopSqr)
+			while (this != null && (transform.position - destination).sqrMagnitude > stopSqr)
 			{
-				if (this == null)
-					return;
-
-				ct.ThrowIfCancellationRequested();
 				var step = _balance.MoveSpeed * Time.deltaTime;
 				transform.position = Vector3.MoveTowards(transform.position, destination, step);
 				FaceTowards(destination);
-				await UniTask.Yield(PlayerLoopTiming.Update, ct);
+				yield return null;
 			}
 
 			PlayState(IdleHash);
 		}
 
-		public async UniTask PlayAttack(CancellationToken ct)
+		public IEnumerator PlayAttack()
 		{
 			PlayState(AttackHash);
-			await UniTask.Delay(System.TimeSpan.FromSeconds(_balance.AttackWindup + _balance.AttackImpactDelay),
-			                    cancellationToken: ct);
+			yield return new WaitForSeconds(_balance.AttackWindup + _balance.AttackImpactDelay);
 		}
 
-		public async UniTask PlaySuperAttack(CancellationToken ct)
+		public IEnumerator PlaySuperAttack()
 		{
 			PlayState(SuperAttackHash);
-			await UniTask.Delay(System.TimeSpan.FromSeconds(_balance.AttackWindup + _balance.AttackImpactDelay),
-			                    cancellationToken: ct);
+			yield return new WaitForSeconds(_balance.AttackWindup + _balance.AttackImpactDelay);
 		}
 
-		public async UniTask PlayRecover(CancellationToken ct)
+		public IEnumerator PlayRecover()
 		{
-			await UniTask.Delay(System.TimeSpan.FromSeconds(_balance.AttackRecover), cancellationToken: ct);
+			yield return new WaitForSeconds(_balance.AttackRecover);
 			PlayState(IdleHash);
 		}
 
-		public async UniTask PlayBounceBack(Vector3 origin, CancellationToken ct)
+		public IEnumerator PlayBounceBack(Vector3 origin)
 		{
 			PlayState(HitHash);
-			await Tween.Move(transform, origin, _balance.FailedAttackBounce, Ease.OutBack, ct);
+			yield return Tween.Move(transform, origin, _balance.FailedAttackBounce, Ease.OutBack);
 			PlayState(IdleHash);
 		}
 
-		public async UniTask PlayUpgrade(CancellationToken ct)
+		public IEnumerator PlayUpgrade()
 		{
 			PlayState(UpgradeHash);
 			if (_sword != null)
 				_sword.localScale = Vector3.one;
 
-			await RandomFlair(_balance.UpgradeDuration, ct);
-			await UniTask.Delay(System.TimeSpan.FromSeconds(_balance.UpgradeAnimTail), cancellationToken: ct);
+			StartFlair(_balance.UpgradeDuration);
+			yield return new WaitForSeconds(_balance.UpgradeDuration);
+			yield return new WaitForSeconds(_balance.UpgradeAnimTail);
 		}
 
-		public UniTask PlayPowerGain(CancellationToken ct) => RandomFlair(_balance.UpgradeDuration * 0.6f, ct);
+		public void PlayPowerGain() => StartFlair(_balance.UpgradeDuration * 0.6f);
 
 		public void PlayIdle() => PlayState(IdleHash);
 
@@ -105,11 +147,11 @@ namespace Project.Gameplay.Units
 
 		public void PlayHurt() => PlayState(HitHash);
 
-		public async UniTask PlayDeath(CancellationToken ct)
+		public IEnumerator PlayDeath()
 		{
 			PlayState(DeathHash);
-			await UniTask.Delay(System.TimeSpan.FromSeconds(_balance.DeathAnimDuration), cancellationToken: ct);
-			await Tween.Scale(transform, Vector3.zero, _balance.DeathFadeDuration, Ease.InQuad, ct);
+			yield return new WaitForSeconds(_balance.DeathAnimDuration);
+			yield return Tween.Scale(transform, Vector3.zero, _balance.DeathFadeDuration, Ease.InQuad);
 		}
 
 		public override void FaceTowards(Vector3 worldTarget)
@@ -124,111 +166,114 @@ namespace Project.Gameplay.Units
 			                                      18f * Time.deltaTime);
 		}
 
-		private UniTask RandomFlair(float duration, CancellationToken ct)
+		private void StartFlair(float duration)
 		{
+			if (_flairCo != null) StopCoroutine(_flairCo);
+			_flairCo = StartCoroutine(RunFlair(duration));
+		}
+
+		private IEnumerator RunFlair(float duration)
+		{
+			IEnumerator flair;
 			switch (Random.Range(0, 5))
 			{
-				case 0:
-					return Tween.Punch(transform, 0.30f, duration, ct);
-				case 1:
-					return HopUp(duration, ct);
-				case 2:
-					return Squash(duration, ct);
-				case 3:
-					return DoubleHop(duration, ct);
-				default:
-					return SpeedBurst(duration, ct);
+				case 0: flair = PunchFlair(duration); break;
+				case 1: flair = HopUp(duration); break;
+				case 2: flair = Squash(duration); break;
+				case 3: flair = DoubleHop(duration); break;
+				default: flair = SpeedBurst(duration); break;
+			}
+			yield return flair;
+
+			if (this != null)
+			{
+				transform.localScale = _flairBaseScale;
+				var p = transform.position;
+				p.y = _flairBaseY;
+				transform.position = p;
+			}
+			_flairCo = null;
+		}
+
+		private IEnumerator PunchFlair(float duration)
+		{
+			const float amplitude = 0.30f;
+			duration = Mathf.Max(0.0001f, duration);
+			var elapsed = 0f;
+			while (elapsed < duration && this != null)
+			{
+				elapsed += Time.deltaTime;
+				var k = elapsed / duration;
+				var bump = Mathf.Sin(k * Mathf.PI) * amplitude;
+				transform.localScale = _flairBaseScale * (1f + bump);
+				yield return null;
 			}
 		}
 
-		private async UniTask SpeedBurst(float duration, CancellationToken ct)
+		private IEnumerator SpeedBurst(float duration)
 		{
-			if (_animator == null) return;
+			if (_animator == null) yield break;
 			var prev = _animator.speed;
 			_animator.speed = 1.6f;
 
 			var elapsed = 0f;
-			while (elapsed < duration && this != null && !ct.IsCancellationRequested)
+			while (elapsed < duration && this != null)
 			{
 				elapsed += Time.deltaTime;
-				await UniTask.Yield(PlayerLoopTiming.Update, ct).SuppressCancellationThrow();
+				yield return null;
 			}
 
 			if (this != null && _animator != null)
 				_animator.speed = prev;
 		}
 
-		private async UniTask HopUp(float duration, CancellationToken ct)
+		private IEnumerator HopUp(float duration)
 		{
 			const float hopHeight = 0.7f;
-			var startY = transform.position.y;
 			var elapsed = 0f;
-			while (elapsed < duration && this != null && !ct.IsCancellationRequested)
+			while (elapsed < duration && this != null)
 			{
 				elapsed += Time.deltaTime;
 				var k = Mathf.Clamp01(elapsed / duration);
-				var y = startY + Mathf.Sin(k * Mathf.PI) * hopHeight;
+				var y = _flairBaseY + Mathf.Sin(k * Mathf.PI) * hopHeight;
 				var p = transform.position;
 				p.y = y;
 				transform.position = p;
-				await UniTask.Yield(PlayerLoopTiming.Update, ct).SuppressCancellationThrow();
-			}
-
-			if (this != null)
-			{
-				var end = transform.position;
-				end.y = startY;
-				transform.position = end;
+				yield return null;
 			}
 		}
 
-		private async UniTask Squash(float duration, CancellationToken ct)
+		private IEnumerator Squash(float duration)
 		{
-			var origin = transform.localScale;
 			var elapsed = 0f;
-			while (elapsed < duration && this != null && !ct.IsCancellationRequested)
+			while (elapsed < duration && this != null)
 			{
 				elapsed += Time.deltaTime;
 				var k = Mathf.Clamp01(elapsed / duration);
 				var s = Mathf.Sin(k * Mathf.PI * 2f);
-				transform.localScale = new Vector3(origin.x * (1f + s * 0.18f),
-				                                   origin.y * (1f - s * 0.18f),
-				                                   origin.z * (1f + s * 0.18f));
-				await UniTask.Yield(PlayerLoopTiming.Update, ct).SuppressCancellationThrow();
+				transform.localScale = new Vector3(_flairBaseScale.x * (1f + s * 0.18f),
+				                                   _flairBaseScale.y * (1f - s * 0.18f),
+				                                   _flairBaseScale.z * (1f + s * 0.18f));
+				yield return null;
 			}
-
-			if (this != null)
-				transform.localScale = origin;
 		}
 
-		private async UniTask DoubleHop(float duration, CancellationToken ct)
+		private IEnumerator DoubleHop(float duration)
 		{
 			const float hopHeight = 0.4f;
-			var startY = transform.position.y;
 			var elapsed = 0f;
-			while (elapsed < duration && this != null && !ct.IsCancellationRequested)
+			while (elapsed < duration && this != null)
 			{
 				elapsed += Time.deltaTime;
 				var k = Mathf.Clamp01(elapsed / duration);
-				var y = startY + Mathf.Abs(Mathf.Sin(k * Mathf.PI * 2f)) * hopHeight;
+				var y = _flairBaseY + Mathf.Abs(Mathf.Sin(k * Mathf.PI * 2f)) * hopHeight;
 				var p = transform.position;
 				p.y = y;
 				transform.position = p;
-				await UniTask.Yield(PlayerLoopTiming.Update, ct).SuppressCancellationThrow();
-			}
-
-			if (this != null)
-			{
-				var end = transform.position;
-				end.y = startY;
-				transform.position = end;
+				yield return null;
 			}
 		}
 
-		private void PlayState(int hash)
-		{
-			if (_animator != null)
-				_animator.CrossFadeInFixedTime(hash, 0.08f);
-		}
+		private void PlayState(string state) => PlayAnim(state);
 	}
 }

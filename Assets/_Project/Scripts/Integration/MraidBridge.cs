@@ -23,7 +23,7 @@ namespace Project.Integration
         [DllImport("__Internal")] private static extern void Playable_LogEvent(string json);
 #else
         private static void Playable_Init() { }
-        private static void Playable_OpenStore(string url) => Application.OpenURL(url);
+        private static void Playable_OpenStore(string url) => Debug.Log($"[playable mock] open {url}");
         private static void Playable_LogEvent(string json) => Debug.Log("[playable] " + json);
 #endif
 

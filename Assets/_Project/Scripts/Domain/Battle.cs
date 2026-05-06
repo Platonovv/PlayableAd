@@ -10,11 +10,11 @@ namespace Project.Domain
     /// </summary>
     public sealed class Battle
     {
-        private readonly Dictionary<UnitId, Unit> _units = new();
+        private readonly Dictionary<UnitId, Unit> _units = new Dictionary<UnitId, Unit>();
 
         public Unit Player { get; }
         public IReadOnlyDictionary<UnitId, Unit> Units => _units;
-        public BattleEvents Events { get; } = new();
+        public BattleEvents Events { get; } = new BattleEvents();
         public bool IsOver { get; private set; }
 
         public Battle(Unit player, IEnumerable<Unit> targets)
@@ -34,11 +34,8 @@ namespace Project.Domain
             if (IsOver) return;
             if (!_units.TryGetValue(action.TargetId, out var target) || !target.IsAlive) return;
 
-            switch (action)
-            {
-                case AttackAction:    ResolveAttack(target);  break;
-                case CollectChestAction: ResolveChest(target); break;
-            }
+            if      (action is AttackAction)        ResolveAttack(target);
+            else if (action is CollectChestAction)  ResolveChest(target);
         }
 
         private void ResolveAttack(Unit target)

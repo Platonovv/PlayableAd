@@ -16,7 +16,7 @@ namespace Project.EditorTools.Tools
             for (var i = 0; i < Roots.Length && !match; i++)
                 match = assetPath.Contains(Roots[i]);
             if (!match) return;
-            if (assetImporter is not TextureImporter t) return;
+            if (!(assetImporter is TextureImporter t)) return;
 
             t.textureType = TextureImporterType.Sprite;
             t.spriteImportMode = SpriteImportMode.Single;

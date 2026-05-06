@@ -10,7 +10,7 @@ namespace Project.Core
     {
         private readonly T _prefab;
         private readonly Transform _parent;
-        private readonly Stack<T> _free = new();
+        private readonly Stack<T> _free = new Stack<T>();
 
         public Pool(T prefab, Transform parent, int prewarm = 0)
         {

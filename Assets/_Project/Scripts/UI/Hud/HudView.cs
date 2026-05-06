@@ -1,5 +1,5 @@
-using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Project.UI.Hud
 {
@@ -8,7 +8,7 @@ namespace Project.UI.Hud
     /// </summary>
     public sealed class HudView : MonoBehaviour
     {
-        [SerializeField] private TMP_Text _playerPower;
+        [SerializeField] private Text _playerPower;
         [SerializeField] private CanvasGroup _hint;
 
         public void SetPower(int value)

@@ -27,7 +27,7 @@ namespace Project.Configs
             public string PrefabKey;
         }
 
-        public PlayerSpawn Player = new() { Position = new Vector2(0f, -3f), Power = 5 };
-        public List<TargetSpawn> Targets = new();
+        public PlayerSpawn Player = new PlayerSpawn() { Position = new Vector2(0f, -3f), Power = 5 };
+        public List<TargetSpawn> Targets = new List<TargetSpawn>();
     }
 }

@@ -14,8 +14,9 @@ namespace Project.Gameplay.Vfx
 		[SerializeField] private float _sideOffset = 0.18f;
 		[SerializeField] private float _lifetime = 0.9f;
 		[SerializeField] private float _scale = 0.35f;
-		[SerializeField] private Color _color = new(0.18f, 0.13f, 0.08f, 0.7f);
+		[SerializeField] private Color _color = new Color(0.18f, 0.13f, 0.08f, 0.7f);
 		[SerializeField] private float _yOffset = 0.02f;
+		[SerializeField] private float _minStepSpeed = 1.5f;
 
 		private int _runHash;
 		private float _accumDistance;
@@ -50,6 +51,13 @@ namespace Project.Gameplay.Vfx
 			}
 
 			var delta = Vector3.Distance(transform.position, lastPos);
+			var dt = Mathf.Max(Time.deltaTime, 0.0001f);
+			if (delta / dt < _minStepSpeed)
+			{
+				_accumDistance = 0f;
+				return;
+			}
+
 			_accumDistance += delta;
 			if (!(_accumDistance >= _emitDistance))
 				return;
@@ -62,6 +70,7 @@ namespace Project.Gameplay.Vfx
 		{
 			if (_animator == null)
 				return true;
+
 			var info = _animator.GetCurrentAnimatorStateInfo(0);
 			return info.shortNameHash == _runHash;
 		}

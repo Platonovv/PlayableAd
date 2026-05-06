@@ -1,5 +1,4 @@
-using System.Threading;
-using Cysharp.Threading.Tasks;
+using System.Collections;
 using Project.Core;
 using Project.Domain;
 using UnityEngine;
@@ -11,8 +10,6 @@ namespace Project.Gameplay.Units
     /// </summary>
     public sealed class ChestView : UnitView
     {
-        private static readonly int OpenHash = Animator.StringToHash("Open");
-
         [SerializeField] private Animator _animator;
         [SerializeField] private ParticleSystem _openVfx;
         [SerializeField] private float _idleBobAmplitude = 0f;
@@ -26,15 +23,17 @@ namespace Project.Gameplay.Units
             base.Bind(unit, camera);
             _basePosition = transform.localPosition;
             _basePositionCached = true;
+            if (_animator != null)
+                _animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
         }
 
-        public async UniTask PlayOpen(CancellationToken ct)
+        public IEnumerator PlayOpen()
         {
-            if (_animator != null) _animator.CrossFadeInFixedTime(OpenHash, 0.05f);
+            PlayAnim("Open");
             if (_openVfx != null) _openVfx.Play();
-            await Tween.Punch(transform, 0.2f, 0.45f, ct);
-            await UniTask.Delay(System.TimeSpan.FromSeconds(0.2f), cancellationToken: ct);
-            gameObject.SetActive(false);
+            yield return Tween.Punch(transform, 0.2f, 0.45f);
+            yield return new WaitForSeconds(0.2f);
+            if (this != null) gameObject.SetActive(false);
         }
 
         private void Update()

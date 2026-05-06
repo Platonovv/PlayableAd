@@ -13,7 +13,7 @@ namespace Project.Gameplay
 	{
 		[SerializeField] private UnitsBank _bank;
 		[SerializeField] private Transform _root;
-		[SerializeField] private Vector3 _spawnRotation = new(-15f, -180f, 0f);
+		[SerializeField] private Vector3 _spawnRotation = new Vector3(-15f, -180f, 0f);
 
 		public sealed class Result
 		{
@@ -33,7 +33,7 @@ namespace Project.Gameplay
 				return new Result
 				{
 					Views = views,
-					Battle = new Battle(new Unit(UnitKind.Player, Power.Zero), System.Array.Empty<Unit>())
+					Battle = new Battle(new Unit(UnitKind.Player, Power.Zero), new Unit[0])
 				};
 			}
 
@@ -49,12 +49,13 @@ namespace Project.Gameplay
 			foreach (var t in level.Targets)
 			{
 				var unit = new Unit(t.Kind, new Power(t.Power));
-				UnitView view = t.Kind switch
+				UnitView view;
+				switch (t.Kind)
 				{
-					UnitKind.Enemy => InstantiateEnemy(t.PrefabKey, parent),
-					UnitKind.Chest => _bank.ChestPrefab != null ? Instantiate(_bank.ChestPrefab, parent) : null,
-					_              => null
-				};
+					case UnitKind.Enemy: view = InstantiateEnemy(t.PrefabKey, parent); break;
+					case UnitKind.Chest: view = _bank.ChestPrefab != null ? Instantiate(_bank.ChestPrefab, parent) : null; break;
+					default:             view = null; break;
+				}
 				if (view == null)
 				{
 					Debug.LogWarning($"[UnitSpawner] Нет префаба для {t.Kind} key='{t.PrefabKey}'.");
@@ -79,7 +80,7 @@ namespace Project.Gameplay
 			return prefab != null ? Instantiate(prefab, parent) : null;
 		}
 
-		private Vector3 ToWorld(Vector2 p) => new(p.x, 0f, p.y);
+		private Vector3 ToWorld(Vector2 p) => new Vector3(p.x, 0f, p.y);
 
 		private void FaceCamera(UnitView view)
 		{

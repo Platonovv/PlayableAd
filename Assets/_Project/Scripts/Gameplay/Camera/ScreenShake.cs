@@ -1,5 +1,4 @@
-using System.Threading;
-using Cysharp.Threading.Tasks;
+using System.Collections;
 using UnityEngine;
 
 namespace Project.Gameplay.CameraFx
@@ -10,18 +9,17 @@ namespace Project.Gameplay.CameraFx
     public sealed class ScreenShake : MonoBehaviour
     {
         private Vector3 _origin;
-        private CancellationTokenSource _cts;
+        private Coroutine _co;
 
         private void Awake() => _origin = transform.localPosition;
 
         public void Shake(float amplitude, float duration)
         {
-            _cts?.Cancel();
-            _cts = new CancellationTokenSource();
-            _ = Run(amplitude, duration, _cts.Token);
+            if (_co != null) StopCoroutine(_co);
+            _co = StartCoroutine(Run(amplitude, duration));
         }
 
-        private async UniTask Run(float amplitude, float duration, CancellationToken ct)
+        private IEnumerator Run(float amplitude, float duration)
         {
             var elapsed = 0f;
             while (elapsed < duration)
@@ -30,14 +28,15 @@ namespace Project.Gameplay.CameraFx
                 var fade = 1f - Mathf.Clamp01(elapsed / duration);
                 var offset = (Vector3)Random.insideUnitCircle * amplitude * fade;
                 transform.localPosition = _origin + offset;
-                await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate, ct);
+                yield return null;
             }
             transform.localPosition = _origin;
+            _co = null;
         }
 
         private void OnDisable()
         {
-            _cts?.Cancel();
+            if (_co != null) { StopCoroutine(_co); _co = null; }
             transform.localPosition = _origin;
         }
     }

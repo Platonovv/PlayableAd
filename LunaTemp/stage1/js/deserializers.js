@@ -1956,7 +1956,7 @@ Deserializers.productName = "Playable ads";
 
 Deserializers.lunaInitializationTime = "05/04/2026 21:09:13";
 
-Deserializers.lunaDaysRunning = "2.0";
+Deserializers.lunaDaysRunning = "2.5";
 
 Deserializers.lunaVersion = "7.2.0";
 
@@ -2010,7 +2010,7 @@ Deserializers.graphicsConstraint = 24;
 
 Deserializers.linearColorSpace = false;
 
-Deserializers.buildID = "3794a54c-b93c-4bab-8dd2-b4f0604b1dc8";
+Deserializers.buildID = "b2378fea-1ece-4bfa-a07f-d25ea5f55290";
 
 Deserializers.runtimeInitializeOnLoadInfos = [[["UnityEngine","Experimental","Rendering","ScriptableRuntimeReflectionSystemSettings","ScriptingDirtyReflectionSystemInstance"]],[],[],[],[]];
 

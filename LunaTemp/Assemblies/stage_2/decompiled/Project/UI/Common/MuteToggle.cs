@@ -32,12 +32,6 @@ namespace Project.UI.Common
 			}
 		}
 
-		public void SetMuted(bool muted)
-		{
-			_muted = muted;
-			ApplyState();
-		}
-
 		private void Toggle()
 		{
 			_muted = !_muted;

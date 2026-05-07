@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<linker>
+  <assembly fullname="UnityEngine.TextRenderingModule" preserve="all"/>
+  <assembly fullname="UnityEngine.UI" preserve="all"/>
+  <assembly fullname="UnityEngine.UIModule" preserve="all"/>
+  <assembly fullname="UnityEngine.IMGUIModule" preserve="all"/>
+  <assembly fullname="UnityEngine.AnimationModule" preserve="all"/>
+</linker>

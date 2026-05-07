@@ -1,0 +1,160 @@
+{
+  "BuildID": "3794a54c-b93c-4bab-8dd2-b4f0604b1dc8",
+  "Command": "project:deploy",
+  "ProjectID": "1c7acbfa9d567284385ee3aa77581220",
+  "ProjectStateHash": "42b96a95460bf05059841239a15383fcbe24681f34056449b5476a68a5aaac89",
+  "StageCompletedAt": 3,
+  "EarliestFatalError": 0,
+  "StartTime": 1778100323052,
+  "EndTime": 1778100348857,
+  "PlaygroundUserID": 35684,
+  "OperatingSystem": "win32",
+  "UnityPackageID": null,
+  "TargetPlatform": "playground",
+  "UnityVersion": "2022.3.62f2",
+  "LunaVersion": "7.2.0",
+  "LogCount": 6,
+  "Logs": [
+    {
+      "LogID": "7ba74ced-7c64-4f86-9bd4-a960d3c5d46f",
+      "Order": 3,
+      "Timestamp": 1778100349148,
+      "Stage": 3,
+      "ErrorType": 1,
+      "ErrorCode": "LP3006",
+      "Description": "You are not using the Luna API: Playable.InstallFullGame",
+      "Details": [
+        "You are not using the Luna API: Playable.InstallFullGame. Some ad networks require these calls. Please add these calls to ensure your playable works on all ad networks. Check documentation for more information."
+      ],
+      "DescriptionValues": [
+        "Playable",
+        "InstallFullGame"
+      ],
+      "DetailsValues": [
+        "Playable",
+        "InstallFullGame"
+      ],
+      "LogCount": 1,
+      "LinePosition": null,
+      "FilePath": "",
+      "ClassName": "",
+      "MemberName": "",
+      "Severity": 0
+    },
+    {
+      "LogID": "13454051-2d25-4354-97e4-479cec716382",
+      "Order": 3,
+      "Timestamp": 1778100349149,
+      "Stage": 3,
+      "ErrorType": 1,
+      "ErrorCode": "LP3015",
+      "Description": "You are not the Game Ended API: LifeCycle.GameEnded",
+      "Details": [
+        "You are not using the Game Ended API: LifeCycle.GameEnded. Some ad networks require this call, please add the event to avoid the ad being rejected."
+      ],
+      "DescriptionValues": [
+        "LifeCycle",
+        "GameEnded"
+      ],
+      "DetailsValues": [
+        "LifeCycle",
+        "GameEnded"
+      ],
+      "LogCount": 1,
+      "LinePosition": null,
+      "FilePath": "",
+      "ClassName": "",
+      "MemberName": "",
+      "Severity": 0
+    },
+    {
+      "LogID": "f016163e-1f61-467f-9977-e2dae601ee9f",
+      "Order": 3,
+      "Timestamp": 1778100349149,
+      "Stage": 3,
+      "ErrorType": 3,
+      "ErrorCode": "LP3007",
+      "Description": "You are not using any custom events",
+      "Details": [
+        "You are not using any custom events. It is recommended to use custom events to have a better understanding of the playable."
+      ],
+      "DescriptionValues": [
+        ""
+      ],
+      "DetailsValues": [
+        ""
+      ],
+      "LogCount": 1,
+      "LinePosition": null,
+      "FilePath": "",
+      "ClassName": "",
+      "MemberName": "",
+      "Severity": 0
+    },
+    {
+      "LogID": "b4e6f3ef-6e56-40e0-9ef9-a518b7804577",
+      "Order": 3,
+      "Timestamp": 1778100349150,
+      "Stage": 3,
+      "ErrorType": 3,
+      "ErrorCode": "LP3011",
+      "Description": "You are not using any LunaPlaygroundFields attributes.",
+      "Details": [
+        "You are not using any LunaPlaygroundFields attributes, it allows you to configure your playable to different concepts to find the best variation, which can drastically improve playable performance on all ad networks."
+      ],
+      "DescriptionValues": null,
+      "DetailsValues": null,
+      "LogCount": 1,
+      "LinePosition": null,
+      "FilePath": "",
+      "ClassName": "",
+      "MemberName": "",
+      "Severity": 0
+    },
+    {
+      "LogID": "ce54018f-57e7-4e3f-94b3-77ace7240282",
+      "Order": 0,
+      "Timestamp": 1778100327844,
+      "Stage": 1,
+      "ErrorType": 2,
+      "ErrorCode": "LP1031",
+      "Description": "We recommend running Runtime Analysis to find and remove all unused shader variants",
+      "Details": [
+        "You have 6 shaders and 14 shader variants in your scene, this can be detrimental to the loading times and size of your playable.\n\nRuntime Analysis has only found 6 shader variants in use within your playable. Navigate to the Runtime Analysis > Shaders tab to enable shader stripping to help reduce the amount of shaders, and shader variants present in your playable"
+      ],
+      "DescriptionValues": [],
+      "DetailsValues": [
+        "6",
+        "14",
+        "6"
+      ],
+      "LogCount": 1,
+      "LinePosition": 0,
+      "FilePath": "",
+      "ClassName": "",
+      "MemberName": "",
+      "Severity": 0
+    },
+    {
+      "LogID": "0593479b-8160-4a50-b379-045cb94a19de",
+      "Order": 1,
+      "Timestamp": 1778100327851,
+      "Stage": 1,
+      "ErrorType": 2,
+      "ErrorCode": "LP1010",
+      "Description": "Looks like a collider was scaled, this might affect performance.",
+      "Details": [
+        "Sword",
+        "Sword (1)"
+      ],
+      "DescriptionValues": [],
+      "DetailsValues": [],
+      "LogCount": 2,
+      "LinePosition": 0,
+      "FilePath": "",
+      "ClassName": "",
+      "MemberName": "",
+      "Severity": 0
+    }
+  ]
+}

@@ -25,12 +25,6 @@
       },
       "url": "https://packages.unity.com"
     },
-    "com.unity.playworks.upp": {
-      "version": "file:../../UnityPlug/scripts",
-      "depth": 0,
-      "source": "local",
-      "dependencies": {}
-    },
     "com.unity.sysroot": {
       "version": "2.0.10",
       "depth": 1,

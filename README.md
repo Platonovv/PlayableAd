@@ -124,6 +124,28 @@ Editor    → SequenceTexturePostprocessor, MaterialFixer, MaterialAutoFill,
 
 Если сцены нет (свежий клон) — `Playable → Tools → Build Main Scene` соберёт её одной кнопкой (иерархия, компоненты, ссылки, дефолтные SO).
 
+### Почему Unity Playworks Plugin не лежит в репозитории
+
+Плагин — **проприетарный SDK Luna Labs** под закрытой лицензией ([Unity Operate Services ToS](https://unity.com/legal/one-operate-services-terms-of-service)). Прямая ре-публикация в публичных репо нарушает EULA, поэтому я его в репо не кладу. Стандартная практика для тестовых заданий с лицензированными SDK (то же самое делают с Photon, Firebase, Unity Ads с лицензированными билд-плагинами и т.д.).
+
+Помимо лицензионного запрета, плагин физически тяжёлый: сам Unity-пакет ~1.4 MB, но реальная транспиляция C# → JS зависит от ~635 MB бинарников (`tools/`, `pipeline/` — ffmpeg, node, brotli, pngquant и др.). Бутафорно положить только 1.4 MB пакета без бинарников не работает — финальный HTML всё равно не соберётся.
+
+**Финальный билд `Build/Playble_unityads.html` уже лежит в репо** — для проверки результата плагин не нужен, достаточно открыть HTML в браузере.
+
+### Установка Unity Playworks (нужна только если хочешь пересобрать HTML самостоятельно)
+
+Для запуска проекта в Editor и обычной сборки WebGL — плагин **не требуется**. `MraidBridge` подхватывает Luna SDK через рефлексию и в Editor использует mock-фолбэк. Без плагина проект открывается и играется без ошибок.
+
+Если нужно пересобрать финальный HTML под рекламные сети:
+
+1. Скачать Unity Playworks Plugin с [create.lunalabs.io](https://create.lunalabs.io) (нужен аккаунт Luna).
+2. Распаковать в любую удобную папку рядом с проектом, например `../UnityPlug/scripts`.
+3. В `Packages/manifest.json` добавить строку:
+   ```json
+   "com.unity.playworks.upp": "file:../../UnityPlug/scripts",
+   ```
+4. Unity подхватит пакет автоматически. Меню `Window → Unity Playworks Plugin` (Ctrl+E) станет доступно.
+
 ---
 
 ## Edit-time утилиты
